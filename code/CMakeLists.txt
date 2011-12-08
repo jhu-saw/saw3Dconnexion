@@ -27,7 +27,9 @@ if (cisst_FOUND_AS_REQUIRED)
   include (${CISST_USE_FILE})
 
   add_library (saw3Dconnexion
+               ${IS_SHARED}
                ../mts3Dconnexion.h
+               ../saw3DconnexionExport.h
                mts3Dconnexion.cpp)
   cisst_target_link_libraries (saw3Dconnexion ${REQUIRED_CISST_LIBRARIES})
 

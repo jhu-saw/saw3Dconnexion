@@ -4,7 +4,7 @@
 /*
   $Id$
 
-  Author(s):  Marcin Balicki
+  Author(s):  Marcin Balicki, Anton Deguet
   Created on: 2008-04-12
 
   (C) Copyright 2008-2011 Johns Hopkins University (JHU), All Rights
@@ -24,40 +24,29 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
 
-#include <cmath>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-#include <conio.h>
-
-
-#include <Windows.h>
-
-#import "progid:TDxInput.Device.1" no_namespace
-
-//Created by Marcin Balicki.
+// Always include last!
+#include <saw3Dconnexion/saw3DconnexionExport.h>
 
 /*!
-  \todo Remove all Windows.h and most system include from osa3Dconnexion.h (move to .cpp)
-  \todo Add code to create as DLL on windows
   \todo Can we activate the buttons from code, i.e. not using external 3Dconnexion control panel
   \todo Use prm type for API?  At osa level, use vctTypes?
+  \todo Add calibrate/bias function
+  \todo Add bypassing wizard settings. //looks like overall speed setting should be at max, button numbers, ...
+  \todo Test connection robustness.
+  \todo Standardize values. (max is 1600 with full speed setting for both trans and rot)
+  \todo Add button events
+  \todo Check update rate seems sluggish with latency.
+  \todo Remove the loop timer, use the automatic one.
+  \todo Use wizard to set the buttons to 1, and 2 (keystroke #s)
 */
 
-//there exists an error if you install 3dx software on a different user.
-//TODO : add calibrate/bias function
-//TODO : add bypassing wizard settings. //looks like overall speed setting should be at max!
-//TODO : test connection robustness.
-//TODO : standardize values. (max is 1600 with full speed setting for both trans and rot)
-//TODO : add button events
-//TODO : check update rate seems sluggish with latency.
-//TODO : remove the loop timer, use the automatic one.
-//NOTE, use wizard to set the buttons to 1, and 2 (keystroke #s)
+// class containing OS specific data
+class mts3DconnexionData;
 
-class mts3Dconnexion: public mtsTaskPeriodic {
+class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
-public:
+ public:
     //This sets the name and calls Configure
     mts3Dconnexion(const std::string & taskName,
                    double period);
@@ -75,22 +64,22 @@ public:
     //possible to have tasks with a variety of arrangements
     //or multiple tasks. This should be done for convenience.
     //called by the constructor
-    bool Configure(std::string configurationName = "");
+    void Configure(const std::string & configurationName = "");
 
-    std::string GetConfigurationName(void) {
+    std::string GetConfigurationName(void) const {
         return ConfigurationName;
     }
 
     void ReBias(void) {
         CMN_LOG_CLASS_INIT_ERROR << "Rebias not implemented yet" << std::endl;
-    } // not implemented.
+    }
 
     //this masks the output of the device's 6 values, true is on. size 6.
     //0 for anything that has a false flag, by default all are open.
     //void SetAxisMask(const mtsBoolVec &mask);
     //void SetGain(const cmnDouble &gain);
 
-protected:
+ protected:
 
     // this is the name used to loads the configuration settings from the 3dCon application
     std::string ConfigurationName;
@@ -108,16 +97,11 @@ protected:
     mtsBoolVec Mask;
     mtsDouble Gain;
 
-    ISimpleDevicePtr _3DxDevice;
-    ISensor * m_p3DSensor;
-    IKeyboard * m_p3DKeyboard;
-    ISimpleDevicePtr pSimpleDevice;
-    MSG Msg;
-    IVector3DPtr trans;
-    IAngleAxisPtr rot;
+    // OS specific data
+    mts3DconnexionData * Data;
 
     // time out for reading from usb.
-    static const int timeout = 1; //seconds
+    // static const int timeout = 1; //seconds
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mts3Dconnexion);

@@ -13,3 +13,4 @@
 # --- end cisst license ---
 
 add_subdirectory (FLTK)
+add_subdirectory (Qt)

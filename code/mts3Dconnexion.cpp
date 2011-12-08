@@ -20,7 +20,26 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <saw3Dconnexion/mts3Dconnexion.h>
+#include <cisstConfig.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
+
+#if (CISST_OS == CISST_WINDOWS)
+
+#include <Windows.h>
+#import "progid:TDxInput.Device.1" no_namespace
+
+// isolate data specific to windows implementation
+class mts3DconnexionData {
+public:
+    ISimpleDevicePtr _3DxDevice;
+    ISensor * m_p3DSensor;
+    IKeyboard * m_p3DKeyboard;
+    ISimpleDevicePtr pSimpleDevice;
+    MSG Msg;
+    IVector3DPtr trans;
+    IAngleAxisPtr rot;
+};
+#endif
 
 CMN_IMPLEMENT_SERVICES(mts3Dconnexion);
 
@@ -56,85 +75,83 @@ mts3Dconnexion::mts3Dconnexion(const std::string & taskName,
         spaceNavInterface->AddCommandWriteState(StateTable, Gain, "SetGain");
         spaceNavInterface->AddCommandVoid(&mts3Dconnexion::ReBias, this, "ReBias");
     }
+
+    Data = new mts3DconnexionData;
 }
 
 
-bool mts3Dconnexion::Configure(std::string configurationName)
+void mts3Dconnexion::Configure(const std::string & configurationName)
 {
     ConfigurationName = configurationName;
-    return true;
 }
 
 
 bool mts3Dconnexion::Init(void)
 {
+#if (CISST_OS == CISST_WINDOWS)
     //call this in the thread.
     HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (!SUCCEEDED(hr)) {
-        std::cout<<" could not initialize "<<std::endl;
+        CMN_LOG_CLASS_INIT_ERROR << "Init: could not initialize" <<std::endl;
         return false;
     }
 
-    hr = _3DxDevice.CreateInstance(__uuidof(Device));
-    //std::cout<<hr<<std::endl;
-    //Sleep(3000);
-
+    hr = Data->_3DxDevice.CreateInstance(__uuidof(Device));
     if (SUCCEEDED(hr)) {
-        pSimpleDevice = _3DxDevice;
-        if (pSimpleDevice != NULL) {
+        Data->pSimpleDevice = Data->_3DxDevice;
+        if (Data->pSimpleDevice != NULL) {
             long type;
 #define UnknownDevice 0
-            hr = _3DxDevice->QueryInterface(&pSimpleDevice);
-            hr = pSimpleDevice->get_Type(&type);
+            hr = Data->_3DxDevice->QueryInterface(&(Data->pSimpleDevice));
+            hr = Data->pSimpleDevice->get_Type(&type);
             if (type == UnknownDevice) {
-                CMN_LOG_CLASS_INIT_ERROR << "Space Navigator not found!" << std::endl;
+                CMN_LOG_CLASS_INIT_ERROR << "Init: Space Navigator not found!" << std::endl;
                 //is driver running, is the device plugged in?
                 return false;
                 //osaSleep(3000);
                 //exit(-1);
             }
             if (SUCCEEDED(hr) && type != UnknownDevice) {
-
                 // Get the interfaces to the sensor and the keyboard;
-                m_p3DSensor = pSimpleDevice->Sensor;
-                m_p3DKeyboard = pSimpleDevice->Keyboard;
-
-                pSimpleDevice->LoadPreferences(ConfigurationName.c_str());
+                Data->m_p3DSensor = Data->pSimpleDevice->Sensor;
+                Data->m_p3DKeyboard = Data->pSimpleDevice->Keyboard;
+                Data->pSimpleDevice->LoadPreferences(ConfigurationName.c_str());
                 // Connect to the driver
-                hr = pSimpleDevice->Connect();  ///this returns no matter if the device is connected or not.
-                //std::cout<<hr<<std::endl;
-                CMN_LOG_CLASS_INIT_VERBOSE << "SpaceNavigator connected..." << std::endl;
+                hr = Data->pSimpleDevice->Connect();  ///this returns no matter if the device is connected or not.
+                CMN_LOG_CLASS_INIT_VERBOSE << "Init: SpaceNavigator connected..." << std::endl;
                 return true;
-
             }
             else {
-                std::cout << " could not initialize "<< std::endl;
+                CMN_LOG_CLASS_INIT_ERROR << "Init: could not initialize "<< std::endl;
                 return false;
             }
         }
     }
+#endif // CISST_WINDOWS
     return true;
 }
 
 
 mts3Dconnexion::~mts3Dconnexion()
 {
+#if (CISST_OS == CISST_WINDOWS)
     // Release the sensor and keyboard interfaces
-    if (m_p3DSensor) {
-        m_p3DSensor->get_Device((IDispatch**)&_3DxDevice);
-        m_p3DSensor->Release();
+    if (Data->m_p3DSensor) {
+        Data->m_p3DSensor->get_Device((IDispatch**)&(Data->_3DxDevice));
+        Data->m_p3DSensor->Release();
     }
 
-    if (m_p3DKeyboard) {
-        m_p3DKeyboard->Release();
+    if (Data->m_p3DKeyboard) {
+        Data->m_p3DKeyboard->Release();
     }
 
-    if (_3DxDevice) {
+    if (Data->_3DxDevice) {
         // Disconnect it from the driver
-        _3DxDevice->Disconnect();
-        _3DxDevice->Release();
+        Data->_3DxDevice->Disconnect();
+        Data->_3DxDevice->Release();
     }
     //should remove isntances of the space mouse
+#endif // CISST_WINDOWS
 }
 
 
@@ -161,30 +178,31 @@ void mts3Dconnexion::Run(void)
         return;
     }
 
-    if (PeekMessage(&Msg, NULL, 0, 0, PM_REMOVE)) {
-        TranslateMessage(&Msg);
-        DispatchMessage(&Msg);
+#if (CISST_OS == CISST_WINDOWS)
+    if (PeekMessage(&(Data->Msg), NULL, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&(Data->Msg));
+        DispatchMessage(&(Data->Msg));
     }
 
     //if its in the update loop of the mouse and you will handle the message outside
     //simply use PM_NOREMOVE and call GetMessage again outside...
 
-    if (m_p3DSensor) {
+    if (Data->m_p3DSensor) {
         try {
-            trans = m_p3DSensor->GetTranslation();
-            rot = m_p3DSensor->GetRotation();
-            Pose[0] = trans->GetX();
-            Pose[1] = trans->GetY();
-            Pose[2] = trans->GetZ();
+            Data->trans = Data->m_p3DSensor->GetTranslation();
+            Data->rot = Data->m_p3DSensor->GetRotation();
+            Pose[0] = Data->trans->GetX();
+            Pose[1] = Data->trans->GetY();
+            Pose[2] = Data->trans->GetZ();
             //AngleAxis component interface
             //The  AngleAxis  object  provides  a  representation  for  orientation  in  3D  space  using  an
             //angle and an axis. The rotation is specified by a normalized vector and an angle around
             //the vector. The rotation is the right-hand rule.
             double angle;
-            rot->get_Angle(&angle); //intensity so multiply by normalized angle.
-            Pose[3] = rot->GetX() * angle;
-            Pose[4] = rot->GetY() * angle;
-            Pose[5] = rot->GetZ() * angle;
+            Data->rot->get_Angle(&angle); //intensity so multiply by normalized angle.
+            Pose[3] = Data->rot->GetX() * angle;
+            Pose[4] = Data->rot->GetY() * angle;
+            Pose[5] = Data->rot->GetZ() * angle;
             //now lets add a gain.
             Pose *= Gain.Data;
 
@@ -194,7 +212,6 @@ void mts3Dconnexion::Run(void)
                     Pose[i] = 0.0;
                 }
             }
-
             //vctAxAnRot3 axisAngle(Pose.Data[3],Pose.Data[4],Pose.Data[5]);
             //convert to euler angle for readability...
         }
@@ -205,11 +222,10 @@ void mts3Dconnexion::Run(void)
 
     /* 0 == FALSE, -1 == TRUE */
     VARIANT_BOOL res;
-    if (m_p3DKeyboard) {
-
+    if (Data->m_p3DKeyboard) {
         try {
             //m_p3DKeyboard->GetKeys();
-            long b = m_p3DKeyboard->GetKeys();
+            long b = Data->m_p3DKeyboard->GetKeys();
             //std::cout<<"Num of keys: "<<b<<std::endl;
             // std::cout<<"Key names: "<<m_p3DKeyboard->GetKeyName(30)<<" "<<m_p3DKeyboard->GetKeyName(30)<<std::endl;
             //special keys
@@ -221,15 +237,14 @@ void mts3Dconnexion::Run(void)
 
             //NOTE: setup the keys in the way so you can chooze these numbers!
             //left button 1, right button 2!!!
-            res = m_p3DKeyboard->IsKeyDown(1); //this seems to not be a possiblity...throws exception
-
-            if (res==VARIANT_TRUE) {
+            res = Data->m_p3DKeyboard->IsKeyDown(1); //this seems to not be a possiblity...throws exception
+            if (res == VARIANT_TRUE) {
                 Buttons[0] = true;
             } else {
                 Buttons[0] = false;
             }
 
-            res = m_p3DKeyboard->IsKeyDown(2);
+            res = Data->m_p3DKeyboard->IsKeyDown(2);
             if (res == VARIANT_TRUE) {
                 Buttons[1] = true;
             } else {
@@ -237,7 +252,8 @@ void mts3Dconnexion::Run(void)
             }
         }
         catch (...) {
-            CMN_LOG_CLASS_RUN_ERROR << "EXCEPTION!" << std::endl;
+            CMN_LOG_CLASS_RUN_ERROR << "Run: caught exception!" << std::endl;
         }
     }
+#endif // CISST_WINDOWS
 }
