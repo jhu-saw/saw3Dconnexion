@@ -20,7 +20,9 @@ http://www.cisst.org/cisst/license.txt.
 */
 
 #include <saw3Dconnexion/mts3Dconnexion.h>
+
 #include <cisstConfig.h>
+#include <cisstVector/vctDynamicVectorTypes.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 
 #if (CISST_OS == CISST_WINDOWS)
@@ -38,15 +40,77 @@ public:
     MSG Msg;
     IVector3DPtr trans;
     IAngleAxisPtr rot;
+    bool HasInit;
 };
 #endif
+
+#if (CISST_OS == CISST_DARWIN)
+
+// 3Dconnexion framework
+#include <3DconnexionClient/ConnexionClientAPI.h>
+
+// global map to retrieve instance from clientID in message handler
+typedef std::map<UInt16, mts3Dconnexion *> saw3DconnexionIdToInstanceMapType;
+saw3DconnexionIdToInstanceMapType saw3DconnexionIdToInstanceMap;
+
+// this method can be friend in header file without adding any OS specific #include
+void mts3DconnexionInternalMessageHandler(mts3Dconnexion * instance, const vctDynamicVector<double> & axis, int buttons)
+{
+    instance->MessageHandler(axis, buttons);
+}
+
+void mts3DconnexionMessageHandler(io_connect_t connection, natural_t messageType, void * messageArgument)
+{
+    ConnexionDeviceState * state;
+    saw3DconnexionIdToInstanceMapType::iterator instance;
+    switch (messageType) {
+    case kConnexionMsgDeviceState:
+        state = reinterpret_cast<ConnexionDeviceState *>(messageArgument);
+        instance = saw3DconnexionIdToInstanceMap.find(state->client);
+        if (instance != saw3DconnexionIdToInstanceMap.end()) {
+            vctDoubleVec axis(6);
+            for (vctDoubleVec::index_type i = 0; i < 6; i++) {
+                axis[i] = state->axis[i];
+            }
+            mts3DconnexionInternalMessageHandler(instance->second, axis, state->buttons);
+        }
+        break;
+    case kConnexionCmdHandleAxis:
+        std::cerr << "axis info" << std::endl;
+        break;
+    case kConnexionCmdHandleButtons:
+        std::cerr << "buttons info" << std::endl;
+        break;
+    }
+}
+
+class mts3DconnexionData {
+public:
+    UInt16 ClientID;
+    bool HasInit;
+    bool Button1Pressed;
+    bool Button2Pressed;
+    bool Button3Pressed;
+};
+
+#endif // CISST_DARWIN
+
 
 CMN_IMPLEMENT_SERVICES(mts3Dconnexion);
 
 mts3Dconnexion::mts3Dconnexion(const std::string & taskName,
                                double period):
-    mtsTaskPeriodic(taskName, period, false, 1000)
+    mtsTaskPeriodic(taskName, period, false, 1000),
+    DataTable(1000, "3Dconnexion")
 {
+    AddStateTable(&DataTable);
+#if (CISST_OS == CISST_WINDOWS)
+    // state table is being populated in Run
+    DataTable.SetAutomaticAdvance(true);
+#elif (CISST_OS == CISST_DARWIN)
+    // state table is being advance by message handler
+    DataTable.SetAutomaticAdvance(false);
+#endif
     Pose.SetSize(6);
     Buttons.SetSize(2);
 
@@ -61,28 +125,37 @@ mts3Dconnexion::mts3Dconnexion(const std::string & taskName,
     //create interface to this task for major read write commands
     mtsInterfaceProvided * spaceNavInterface = AddInterfaceProvided("ProvidesSpaceNavigator");
 
-    StateTable.AddData(Pose, "AxisData");
-    StateTable.AddData(Buttons, "ButtonData");
-    StateTable.AddData(Mask, "AxisMask");
-    StateTable.AddData(Gain, "Gain");
+    DataTable.AddData(Pose, "AxisData");
+    DataTable.AddData(Buttons, "ButtonData");
+    DataTable.AddData(Mask, "AxisMask");
+    DataTable.AddData(Gain, "Gain");
 
     if (spaceNavInterface) {
-        spaceNavInterface->AddCommandReadState(StateTable, Pose, "GetAxisData");
-        spaceNavInterface->AddCommandReadState(StateTable, Buttons, "GetButtonData");
-        spaceNavInterface->AddCommandReadState(StateTable, Mask, "GetAxisMask");
-        spaceNavInterface->AddCommandWriteState(StateTable, Mask, "SetAxisMask");
-        spaceNavInterface->AddCommandReadState(StateTable, Gain, "GetGain");
-        spaceNavInterface->AddCommandWriteState(StateTable, Gain, "SetGain");
+        spaceNavInterface->AddCommandReadState(DataTable, Pose, "GetAxisData");
+        spaceNavInterface->AddCommandReadState(DataTable, Buttons, "GetButtonData");
+        spaceNavInterface->AddCommandReadState(DataTable, Mask, "GetAxisMask");
+        spaceNavInterface->AddCommandWriteState(DataTable, Mask, "SetAxisMask");
+        spaceNavInterface->AddCommandReadState(DataTable, Gain, "GetGain");
+        spaceNavInterface->AddCommandWriteState(DataTable, Gain, "SetGain");
         spaceNavInterface->AddCommandVoid(&mts3Dconnexion::ReBias, this, "ReBias");
     }
 
     Data = new mts3DconnexionData;
+    Data->HasInit = false;
 }
 
 
 void mts3Dconnexion::Configure(const std::string & configurationName)
 {
     ConfigurationName = configurationName;
+
+    // this is a temporary solution.  On mac OS one needs the RunLoop
+    // to catch and propagate events and all event handlers must be
+    // created/registered in the main loop (unless we figure out how
+    // to run an event loop (cocoa based) on top of a posix thread
+#if (CISST_OS == CISST_DARWIN)
+    Data->HasInit = Init();
+#endif
 }
 
 
@@ -106,10 +179,7 @@ bool mts3Dconnexion::Init(void)
             hr = Data->pSimpleDevice->get_Type(&type);
             if (type == UnknownDevice) {
                 CMN_LOG_CLASS_INIT_ERROR << "Init: Space Navigator not found!" << std::endl;
-                //is driver running, is the device plugged in?
                 return false;
-                //osaSleep(3000);
-                //exit(-1);
             }
             if (SUCCEEDED(hr) && type != UnknownDevice) {
                 // Get the interfaces to the sensor and the keyboard;
@@ -128,6 +198,34 @@ bool mts3Dconnexion::Init(void)
         }
     }
 #endif // CISST_WINDOWS
+
+#if (CISST_OS == CISST_DARWIN)
+    OSErr result = InstallConnexionHandlers(mts3DconnexionMessageHandler, 0L, 0L);
+    if (result != noErr) {
+        CMN_LOG_CLASS_INIT_ERROR << "Init: failed do install handlers (error " << result << ")" << std::endl;
+    } else {
+        CMN_LOG_CLASS_INIT_DEBUG << "Init: handlers installed" << std::endl;
+    }
+    std::string clientName = "3DxSAW";
+    size_t l = clientName.size();
+    unsigned char * pascalString = new unsigned char[l+2]; 
+    pascalString[0] = static_cast<unsigned char>(l);
+    pascalString[l+1] = 0;
+    size_t i = 0;
+    while (i < l) {
+        pascalString[i + 1] = static_cast<unsigned char>(clientName[i]);
+        ++i;
+    }
+    this->Data->ClientID = RegisterConnexionClient(kConnexionClientWildcard, pascalString,
+                                                   kConnexionClientModeTakeOver,
+                                                   kConnexionMaskAll);
+    delete pascalString;
+    CMN_LOG_CLASS_INIT_DEBUG << "Init: client registered with ID: " << this->Data->ClientID << std::endl;
+
+    // save pointer to this to allow callbacks to modify this object
+    saw3DconnexionIdToInstanceMap[this->Data->ClientID] = this;
+#endif // CISST_DARWIN
+
     return true;
 }
 
@@ -164,28 +262,28 @@ void mts3Dconnexion::Run(void)
 {
     ProcessQueuedCommands();
 
-    //note from the web:
-    //I already found out that I have to call CoInitalize(NULL) in the thread and the thread must
-    //live until the main thread ends. Otherwise I would get marshalling errors.
-    static bool hasInit = false;
+#if (CISST_OS == CISST_WINDOWS)
+    // note from the web:
+    // I already found out that I have to call CoInitalize(NULL) in the thread and the thread must
+    // live until the main thread ends. Otherwise I would get marshalling errors.
 
-    //The 3D mouse is a little tricky and has to be initialized in this thread
-    //after the thread has been started ( done internally in runOnce()
-    //The initialization might take 500ms
+    // The 3D mouse is a little tricky and has to be initialized in this thread
+    // after the thread has been started ( done internally in runOnce()
+    // The initialization might take 500ms
 
-    if (!hasInit) {
-        hasInit = Init();//This call takes about .5 ms.
+    
+    if (!Data->HasInit) {
+        Data->HasInit = Init();//This call takes about .5 ms.
         return;
     }
 
-#if (CISST_OS == CISST_WINDOWS)
     if (PeekMessage(&(Data->Msg), NULL, 0, 0, PM_REMOVE)) {
         TranslateMessage(&(Data->Msg));
         DispatchMessage(&(Data->Msg));
     }
 
-    //if its in the update loop of the mouse and you will handle the message outside
-    //simply use PM_NOREMOVE and call GetMessage again outside...
+    // if its in the update loop of the mouse and you will handle the message outside
+    // simply use PM_NOREMOVE and call GetMessage again outside...
 
     if (Data->m_p3DSensor) {
         try {
@@ -194,16 +292,16 @@ void mts3Dconnexion::Run(void)
             Pose[0] = Data->trans->GetX();
             Pose[1] = Data->trans->GetY();
             Pose[2] = Data->trans->GetZ();
-            //AngleAxis component interface
-            //The  AngleAxis  object  provides  a  representation  for  orientation  in  3D  space  using  an
-            //angle and an axis. The rotation is specified by a normalized vector and an angle around
-            //the vector. The rotation is the right-hand rule.
+            // AngleAxis component interface
+            // The  AngleAxis  object  provides  a  representation  for  orientation  in  3D  space  using  an
+            // angle and an axis. The rotation is specified by a normalized vector and an angle around
+            // the vector. The rotation is the right-hand rule.
             double angle;
             Data->rot->get_Angle(&angle); //intensity so multiply by normalized angle.
             Pose[3] = Data->rot->GetX() * angle;
             Pose[4] = Data->rot->GetY() * angle;
             Pose[5] = Data->rot->GetZ() * angle;
-            //now lets add a gain.
+            // now lets add a gain.
             Pose *= Gain.Data;
 
             //filter it
@@ -212,8 +310,6 @@ void mts3Dconnexion::Run(void)
                     Pose[i] = 0.0;
                 }
             }
-            //vctAxAnRot3 axisAngle(Pose.Data[3],Pose.Data[4],Pose.Data[5]);
-            //convert to euler angle for readability...
         }
         catch (...) {
             CMN_LOG_CLASS_RUN_ERROR << "EXCEPTION!" << std::endl;
@@ -257,3 +353,25 @@ void mts3Dconnexion::Run(void)
     }
 #endif // CISST_WINDOWS
 }
+
+
+#if (CISST_OS == CISST_DARWIN)
+void mts3Dconnexion::MessageHandler(const vctDoubleVec & axis, int buttons)
+{
+    DataTable.Start();
+    Pose.Assign(axis);
+    Buttons.SetAll(false);
+    switch (buttons) {
+    case 1:
+        Buttons[0] = true;
+        break;
+    case 2:
+        Buttons[1] = true;
+        break;
+    case 3:
+        Buttons.SetAll(true);
+        break;
+    } 
+    DataTable.Advance();
+}
+#endif // CISST_DARWIN

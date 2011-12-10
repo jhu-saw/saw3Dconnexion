@@ -26,6 +26,10 @@ if (cisst_FOUND_AS_REQUIRED)
   # load cisst configuration
   include (${CISST_USE_FILE})
 
+  if (APPLE)
+    include_directories (${3DconnexionClient_INCLUDE_DIR})
+  endif (APPLE)
+
   add_library (saw3Dconnexion
                ${IS_SHARED}
                ../mts3Dconnexion.h
@@ -33,10 +37,14 @@ if (cisst_FOUND_AS_REQUIRED)
                mts3Dconnexion.cpp)
   cisst_target_link_libraries (saw3Dconnexion ${REQUIRED_CISST_LIBRARIES})
 
+  if (APPLE)
+    target_link_libraries (saw3Dconnexion ${3DconnexionClient_LIBRARY})
+  endif (APPLE)
+
   # create/configure file for find_package (saw3Dconnexion)
   set (saw3Dconnexion_INCLUDE_DIR "${sawComponents_SOURCE_DIR}")
   set (saw3Dconnexion_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-  set (saw3Dconnexion_LIBRARIES saw3Dconnexion)
+  set (saw3Dconnexion_LIBRARIES saw3Dconnexion ${3DconnexionClient_LIBRARY})
 
   configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/saw3DconnexionConfig.cmake.in"
                   "${sawComponents_BINARY_DIR}/saw3DconnexionConfig.cmake"

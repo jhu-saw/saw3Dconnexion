@@ -46,6 +46,11 @@ class mts3DconnexionData;
 class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic {
     CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
 
+#if (CISST_OS == CISST_DARWIN)
+    friend void mts3DconnexionInternalMessageHandler(mts3Dconnexion * instance, const vctDynamicVector<double> & axis, int buttons);
+    void MessageHandler(const vctDynamicVector<double> & axis, int buttons);
+#endif // CISST_DARWIN
+
  public:
     //This sets the name and calls Configure
     mts3Dconnexion(const std::string & taskName,
@@ -80,6 +85,8 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic {
     //void SetGain(const cmnDouble &gain);
 
  protected:
+    // store data in separate state table
+    mtsStateTable DataTable;
 
     // this is the name used to loads the configuration settings from the 3dCon application
     std::string ConfigurationName;
@@ -99,9 +106,6 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic {
 
     // OS specific data
     mts3DconnexionData * Data;
-
-    // time out for reading from usb.
-    // static const int timeout = 1; //seconds
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mts3Dconnexion);
