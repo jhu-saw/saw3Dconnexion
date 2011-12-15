@@ -35,8 +35,9 @@ int main(void)
     // create our tasks
     mtsTaskManager * componentManager = mtsTaskManager::GetInstance();
     UITask * guiTask = new UITask("SimpleGUI", 50.0 * cmn_ms);
-    mts3Dconnexion * SNTask = new mts3Dconnexion("SNTask", 50.0 * cmn_ms);
+    guiTask->Configure();
 
+    mts3Dconnexion * SNTask = new mts3Dconnexion("SNTask", 50.0 * cmn_ms);
     SNTask->Configure("Cube3DPolling");
 
     // add all tasks
@@ -51,9 +52,9 @@ int main(void)
     componentManager->StartAll();
     componentManager->WaitForStateAll(mtsComponentState::ACTIVE);
 
-    // Loop until both tasks are closed
+    // Loop until both tasks are closed, GetExitFlag also handles FLTK events
     while (!(guiTask->GetExitFlag())) {
-        osaSleep(0.1 * cmn_s);
+        osaSleep(10.0 * cmn_ms);
     }
 
     componentManager->KillAll();

@@ -46,34 +46,49 @@ UITask::UITask(const std::string & taskName,
 }
 
 
-void UITask::Startup(void)
+void UITask::Configure(const std::string & CMN_UNUSED(filename))
 {
     Mouse3DGUI.DisplayWindow->show();
 }
 
 
+void UITask::Startup(void)
+{
+}
+
+
 void UITask::Run(void)
 {
-    Fl::check();
-    if (Fl::thread_message() != 0) {
-        //gui error
-        CMN_LOG_CLASS_RUN_ERROR << "GUI Error" << Fl::thread_message() << std::endl;
-        return;
-    }
-
-    //ProcessQueuedEvents();
-    //else do lots of gui updating
-    if (Mouse3DGUI.DoClose == true) {
-        //exit flag for the main thread (higher)
-        ExitFlag = true;
-    }
-
-    GetDigitalInput(DigitalInput);
-    GetAnalogInput(AnalogInput );
-    for (unsigned int i = 0; i < 6; i++) {
-        Mouse3DGUI.AnalogInput[i]->value(AnalogInput[i]);
-    }
+    ProcessQueuedEvents();
     
-    Mouse3DGUI.DigitaInput[0]->value(!DigitalInput[0]);
-    Mouse3DGUI.DigitaInput[1]->value(!DigitalInput[1]);
+    Fl::lock(); {
+        //else do lots of gui updating
+        if (Mouse3DGUI.DoClose == true) {
+            //exit flag for the main thread (higher)
+            ExitFlag = true;
+        }
+        
+        GetDigitalInput(DigitalInput);
+        GetAnalogInput(AnalogInput );
+        for (unsigned int i = 0; i < 6; i++) {
+            Mouse3DGUI.AnalogInput[i]->value(AnalogInput[i]);
+        }
+        
+        Mouse3DGUI.DigitaInput[0]->value(!DigitalInput[0]);
+        Mouse3DGUI.DigitaInput[1]->value(!DigitalInput[1]);
+    } Fl::unlock();
+}
+
+
+bool UITask::GetExitFlag(void)
+{
+    Fl::lock(); {
+        Fl::check();
+        if (Fl::thread_message() != 0) {
+            // gui error
+            CMN_LOG_CLASS_RUN_ERROR << "GUI Error" << Fl::thread_message() << std::endl;
+        }
+    } Fl::unlock();
+
+    return ExitFlag;
 }

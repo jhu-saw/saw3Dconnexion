@@ -46,15 +46,12 @@ public:
            double period);
     ~UITask() {};
 
-    void Configure(const std::string & CMN_UNUSED(filename) = "") {};
+    void Configure(const std::string & filename = "");
     void Startup(void);
     void Run(void);
     void Cleanup(void) {};
 
-    inline bool GetExitFlag (void) const { return ExitFlag;}
-
-    // callback to close
-    static void Close(mtsTask * task);
+    bool GetExitFlag (void);
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(UITask);
