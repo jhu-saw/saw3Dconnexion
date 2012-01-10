@@ -35,6 +35,7 @@ if (cisst_FOUND_AS_REQUIRED)
                ../mts3Dconnexion.h
                ../saw3DconnexionExport.h
                mts3Dconnexion.cpp)
+  set_property (TARGET saw3Dconnexion PROPERTY FOLDER "saw3Dconnexion")
   cisst_target_link_libraries (saw3Dconnexion ${REQUIRED_CISST_LIBRARIES})
 
   if (APPLE)

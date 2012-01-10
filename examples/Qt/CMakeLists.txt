@@ -20,7 +20,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon cisstVector cisstOSAbstraction
 # find cisst and make sure the required libraries have been compiled
 find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND)
+if (cisst_FOUND_AS_REQUIRED)
 
   # load cisst configuration
   include (${CISST_USE_FILE})
@@ -38,6 +38,7 @@ if (cisst_FOUND)
     add_executable (saw3DconnexionExampleQt
                     main.cpp
                     )
+    set_property (TARGET saw3DconnexionExampleQt PROPERTY FOLDER "saw3Dconnexion")
 
     # link against non cisst libraries and saw components
     target_link_libraries (saw3DconnexionExampleQt
@@ -48,4 +49,6 @@ if (cisst_FOUND)
 
   endif (saw3Dconnexion_FOUND)
 
-endif (cisst_FOUND)
+else (cisst_FOUND_AS_REQUIRED)
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
+endif (cisst_FOUND_AS_REQUIRED)
