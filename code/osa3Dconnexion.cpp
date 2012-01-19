@@ -23,26 +23,18 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnLogger.h>
 
 #if (CISST_OS == CISST_LINUX)
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <fcntl.h>
+#include <linux/joystick.h>
+#else
 #endif
 
 // OS dependent structure
 struct osa3Dconnexion::Internals{
 
 #if (CISST_OS == CISST_LINUX)
-
-    XSizeHints* sizehints;
-    XWMHints* wmhints;
-    XClassHint* classhints;
-
-    Display* display;
-    Window window;
-    Atom event_motion;
-    Atom event_buttonpress;
-    Atom event_buttonrelease;
-    Atom event_command;
-
+    std::string filename;    // device filename
+    int fd;                  // file descriptor
+    long long data[6];       // state of the device (events are per axis)
 #else
 #endif
 
@@ -59,207 +51,168 @@ osa3Dconnexion::osa3Dconnexion() :
 
     // initialize the structure
 #if (CISST_OS == CISST_LINUX)
-    internals->display = NULL;
+
+    internals->fd = -1;
+    for( size_t i=0; i<6; i++ ){ internals->data[i] = 0; }
+
 #else
 #endif
 
 }
 
-
 osa3Dconnexion::~osa3Dconnexion(){
 
-    // deallocate the internal structure
     if( internals != NULL ){
         
 #if (CISST_OS == CISST_LINUX)
-        if( internals->display != NULL ){
-            XFree( internals->sizehints );
-            XFree( internals->wmhints );
-            XFree( internals->classhints );
-            XDestroyWindow( internals->display, internals->window );
-            XCloseDisplay( internals->display );
+
+        // close the device if not already closed
+        if( !IsOpened() ){
+            if( close( internals->fd ) == -1 )
+                { CMN_LOG_RUN_ERROR << "Failed to close." << std::endl; }
         }
+
 #else
 #endif
 
         delete internals;
-
+        
     }
 
 }
 
-#define XHigh32( Value )        (((Value)>>16)&0x0000FFFF)
-#define XLow32( Value )         ((Value)&0x0000FFFF)
+bool osa3Dconnexion::IsOpened() const {
 
-osa3Dconnexion::Errno osa3Dconnexion::Initialize(){
+    bool isopened = false;
+
+    if( internals != NULL ){
 
 #if (CISST_OS == CISST_LINUX)
 
-    internals->sizehints  = XAllocSizeHints();
-    internals->wmhints    = XAllocWMHints();
-    internals->classhints = XAllocClassHint();
+        isopened = (internals->fd != -1 );
 
-    // open the default display (DISPLAY environment variable)
-    Display* display = XOpenDisplay( NULL );
-    if( display == NULL ){
-        CMN_LOG_RUN_ERROR << "Failed to open X display." << std::endl;
-        return osa3Dconnexion::EFAILURE;
-    }
-
-    // get the root window
-    Window root = DefaultRootWindow( display );
-
-    // get some info about the default screen
-    int screennumber = DefaultScreen( display );    
-    int width  = DisplayWidth( display, screennumber );
-    int height = DisplayHeight( display, screennumber );
-    unsigned long black = BlackPixel( display, screennumber );
-    unsigned long white = WhitePixel( display, screennumber );
-
-    // create a unmapped window
-    Window window = XCreateSimpleWindow( display,   // display
-                                         root,      // root window
-                                         0,         // x
-                                         0,         // y
-                                         width/5*3, // width
-                                         height/8,  // height
-                                         20,        // border width
-                                         black,     // border pixel
-                                         white );   // background pixel
-
-    XSetWMProperties( display, window, 
-                      NULL, NULL, NULL, 0, 
-                      internals->sizehints, 
-                      internals->wmhints, 
-                      internals->classhints );
-
-    // get the atom identifiers for 3Dconnexion events
-    Atom event_motion       =XInternAtom( display, "MotionEvent", True );
-    Atom event_buttonpress  =XInternAtom( display, "ButtonPressEvent", True );
-    Atom event_buttonrelease=XInternAtom( display, "ButtonReleaseEvent",True );
-    Atom event_command      =XInternAtom( display, "CommandEvent", True );
-    
-    if( event_motion        == None ||
-        event_buttonpress   == None ||
-        event_buttonrelease == None ||
-        event_command       == None ){
-        CMN_LOG_RUN_ERROR << "Cannot get atom identifiers." << std::endl;
-        return osa3Dconnexion::EFAILURE;
-    }
-
-    // get the window that 
-    Atom actual_type_return;
-    int actual_format_return;
-    unsigned long nitems_return, bytes_return;
-    unsigned char* prop_return = NULL;
-    XGetWindowProperty( display, 
-                        root, 
-                        event_command, 
-                        0, 1, 
-                        False,
-                        AnyPropertyType, 
-                        &actual_type_return, 
-                        &actual_format_return, 
-                        &nitems_return,
-                        &bytes_return, 
-                        &prop_return );
-
-    Window cmdwindow = InputFocus;
-
-    cmdwindow = *(Window*)prop_return;
-    XFree( prop_return );
-
-    // send a command to start the daemon
-    XEvent CommandMessage;
-    CommandMessage.type = ClientMessage;
-    CommandMessage.xclient.format = 16;
-    CommandMessage.xclient.send_event = False;
-    CommandMessage.xclient.display = display;
-    CommandMessage.xclient.window = cmdwindow;
-    CommandMessage.xclient.message_type = event_command;
-
-    CommandMessage.xclient.data.s[0] = (short) XHigh32( window );
-    CommandMessage.xclient.data.s[1] = (short) XLow32( window );
-    CommandMessage.xclient.data.s[2] = 27695;
-
-    XSendEvent( display, cmdwindow, False, 0x0000, &CommandMessage );
-    XFlush( display );
-
-    XSelectInput( display, window, KeyPressMask | KeyReleaseMask );
-
-    // copy the info in the internals
-    internals->display             = display;
-    internals->window              = window;
-    internals->event_motion        = event_motion;
-    internals->event_buttonpress   = event_buttonpress;
-    internals->event_buttonrelease = event_buttonrelease;
-    internals->event_command       = event_command;
-
+#else
 #endif
-    
+
+    }
+
+    return isopened;
+
+}
+
+osa3Dconnexion::Errno osa3Dconnexion::Open( const std::string& filename ){
+
+    if( internals != NULL ){
+
+#if (CISST_OS == CISST_LINUX)
+
+        // only open if device is closed
+        if( !IsOpened() ){
+
+            internals->filename = filename;
+            internals->fd = open( filename.c_str(), O_RDWR );
+
+            if( !IsOpened() ){
+                CMN_LOG_RUN_ERROR << "Failed to open " << filename << std::endl;
+                return osa3Dconnexion::EFAILURE;
+            }
+
+        }
+
+        else{
+            CMN_LOG_RUN_ERROR << "Device is already open." << std::endl;
+            return osa3Dconnexion::EFAILURE;
+        }
+
+#else
+#endif
+
+    }
+
     return osa3Dconnexion::ESUCCESS;
-    
+}
+
+osa3Dconnexion::Errno osa3Dconnexion::Close(){
+
+    if( internals != NULL ){
+        
+#if (CISST_OS == CISST_LINUX)
+
+        // only close if device is open
+        if( IsOpened() ){
+            if( close( internals->fd ) != -1 )
+                { internals->fd = -1; }
+            else{
+                CMN_LOG_RUN_ERROR << "Failed to close." << std::endl;
+                return osa3Dconnexion::EFAILURE;
+            }
+        }
+
+#else
+#endif
+
+    }
+
+    return osa3Dconnexion::ESUCCESS;
+
 }
 
 osa3Dconnexion::Event osa3Dconnexion::WaitForEvent(){
 
     osa3Dconnexion::Event event;
+    event.type = osa3Dconnexion::Event::UNKNOWN;
+
+    if( internals != NULL ){
 
 #if (CISST_OS == CISST_LINUX)
+        
+        // check the file descriptor
+        if( IsOpened() ){
+            
+            // read the event
+            struct js_event e; 
+            if( read( internals->fd, &e, sizeof(struct js_event) ) != -1 ){
+                
+                // copty the timestamp
+                event.timestamp = e.time;
+                
+                // Button event
+                if( e.type == JS_EVENT_BUTTON ){
+                    
+                    // Find which button event
+                    if( e.value == 0 )
+                        { event.type = osa3Dconnexion::Event::BUTTON_RELEASED; }
+                    if( e.value == 1 )
+                        { event.type = osa3Dconnexion::Event::BUTTON_PRESSED; }
+                    
+                    // Find which button
+                    if( e.number == 0 )
+                        { event.button = osa3Dconnexion::Event::BUTTON1; }
+                    if( e.number == 1 )
+                        { event.button = osa3Dconnexion::Event::BUTTON2; }
+                    
+                }
+                
+                // Axis event
+                if( e.type == JS_EVENT_AXIS ){
+                    
+                    event.type = osa3Dconnexion::Event::MOTION;
+                    // accumulate the axis value to the internals
+                    internals->data[ e.number ] += e.value; 
+                    // copy all the axis to the event
+                    for( size_t i=0; i<6; i++ )
+                        { event.data[i] = internals->data[ i ]; }
 
-    if( internals->display != NULL ){
-        
-        // get the next X event
-        XEvent xevent;
-        XNextEvent( internals->display, &xevent );
-        
-        // check the event type
-        if( xevent.type == ClientMessage ){
-            
-            if( xevent.xclient.message_type == internals->event_motion ){
-                event.type = osa3Dconnexion::Event::MOTION;
-                event.data[0] = xevent.xclient.data.s[2];
-                event.data[1] = xevent.xclient.data.s[3];
-                event.data[2] = xevent.xclient.data.s[4];
-                event.data[3] = xevent.xclient.data.s[5];
-                event.data[4] = xevent.xclient.data.s[6];
-                event.data[5] = xevent.xclient.data.s[7];
-                event.period  = xevent.xclient.data.s[8]*1000/60;
-            }
-            
-            if( xevent.xclient.message_type == internals->event_buttonpress ){
-                event.type = osa3Dconnexion::Event::BUTTON_PRESSED;
-                switch( xevent.xclient.data.s[2] ){
-                case 1:
-                    event.button = osa3Dconnexion::Event::BUTTON1;
-                    break;
-                case 2:
-                    event.button = osa3Dconnexion::Event::BUTTON2;
-                    break;
-                default:
-                    event.button = osa3Dconnexion::Event::UNKNOWN;
-                    break;
                 }
+                
             }
-            
-            if( xevent.xclient.message_type == internals->event_buttonrelease ){
-                event.type = osa3Dconnexion::Event::BUTTON_RELEASED;
-                switch( xevent.xclient.data.s[2] ){
-                case 1:
-                    event.button = osa3Dconnexion::Event::BUTTON1;
-                    break;
-                case 2:
-                    event.button = osa3Dconnexion::Event::BUTTON2;
-                    break;
-                default:
-                    event.button = osa3Dconnexion::Event::UNKNOWN;
-                    break;
-                }
-            }
+            else { CMN_LOG_RUN_ERROR << "Failed to read device" << std::endl; }
         }
-    }
-
+        else { CMN_LOG_RUN_ERROR << "Invalid device" << std::endl; }
+#else
 #endif
+
+    }
 
     return event;
 }

@@ -5,7 +5,7 @@
 int main(){
 
   osa3Dconnexion spacenavigator;
-  spacenavigator.Initialize();
+  spacenavigator.Open( "/dev/input/js0" );
 
   while( 1 ){
 

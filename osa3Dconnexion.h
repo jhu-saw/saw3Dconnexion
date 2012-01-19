@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _osa3Dconnexion_h
 
 #include <saw3Dconnexion/saw3DconnexionExport.h>
+#include <string>
 
 class CISST_EXPORT osa3Dconnexion {
 
@@ -30,14 +31,14 @@ class CISST_EXPORT osa3Dconnexion {
 
     struct Event{
 
-        enum Type { MOTION, BUTTON_PRESSED, BUTTON_RELEASED };
-        enum Button { UNKNOWN, BUTTON1, BUTTON2 };
-        typedef double Data[6];
+        enum Type { UNKNOWN, MOTION, BUTTON_PRESSED, BUTTON_RELEASED };
+        enum Button { BUTTON1, BUTTON2 };
+        typedef long long Data[6];
 
         Type type;
         Button button;
         Data data;
-        int period;
+        unsigned int timestamp;
 
     };
 
@@ -51,7 +52,10 @@ class CISST_EXPORT osa3Dconnexion {
     osa3Dconnexion();
     ~osa3Dconnexion();
 
-    osa3Dconnexion::Errno Initialize();
+    osa3Dconnexion::Errno Open( const std::string& filename = "" );
+    osa3Dconnexion::Errno Close();
+
+    bool IsOpened() const;
 
     osa3Dconnexion::Event WaitForEvent();
 
