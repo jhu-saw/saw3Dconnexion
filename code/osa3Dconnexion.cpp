@@ -24,12 +24,17 @@ http://www.cisst.org/cisst/license.txt.
 
 #if (CISST_OS == CISST_LINUX)
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #endif
 
 // OS dependent structure
 struct osa3Dconnexion::Internals{
 
 #if (CISST_OS == CISST_LINUX)
+
+    XSizeHints* sizehints;
+    XWMHints* wmhints;
+    XClassHint* classhints;
 
     Display* display;
     Window window;
@@ -68,6 +73,9 @@ osa3Dconnexion::~osa3Dconnexion(){
         
 #if (CISST_OS == CISST_LINUX)
         if( internals->display != NULL ){
+            XFree( internals->sizehints );
+            XFree( internals->wmhints );
+            XFree( internals->classhints );
             XDestroyWindow( internals->display, internals->window );
             XCloseDisplay( internals->display );
         }
@@ -80,10 +88,16 @@ osa3Dconnexion::~osa3Dconnexion(){
 
 }
 
+#define XHigh32( Value )        (((Value)>>16)&0x0000FFFF)
+#define XLow32( Value )         ((Value)&0x0000FFFF)
 
 osa3Dconnexion::Errno osa3Dconnexion::Initialize(){
 
 #if (CISST_OS == CISST_LINUX)
+
+    internals->sizehints  = XAllocSizeHints();
+    internals->wmhints    = XAllocWMHints();
+    internals->classhints = XAllocClassHint();
 
     // open the default display (DISPLAY environment variable)
     Display* display = XOpenDisplay( NULL );
@@ -113,6 +127,12 @@ osa3Dconnexion::Errno osa3Dconnexion::Initialize(){
                                          black,     // border pixel
                                          white );   // background pixel
 
+    XSetWMProperties( display, window, 
+                      NULL, NULL, NULL, 0, 
+                      internals->sizehints, 
+                      internals->wmhints, 
+                      internals->classhints );
+
     // get the atom identifiers for 3Dconnexion events
     Atom event_motion       =XInternAtom( display, "MotionEvent", True );
     Atom event_buttonpress  =XInternAtom( display, "ButtonPressEvent", True );
@@ -126,7 +146,45 @@ osa3Dconnexion::Errno osa3Dconnexion::Initialize(){
         CMN_LOG_RUN_ERROR << "Cannot get atom identifiers." << std::endl;
         return osa3Dconnexion::EFAILURE;
     }
-    
+
+    // get the window that 
+    Atom actual_type_return;
+    int actual_format_return;
+    unsigned long nitems_return, bytes_return;
+    unsigned char* prop_return = NULL;
+    XGetWindowProperty( display, 
+                        root, 
+                        event_command, 
+                        0, 1, 
+                        False,
+                        AnyPropertyType, 
+                        &actual_type_return, 
+                        &actual_format_return, 
+                        &nitems_return,
+                        &bytes_return, 
+                        &prop_return );
+
+    Window cmdwindow = InputFocus;
+
+    cmdwindow = *(Window*)prop_return;
+    XFree( prop_return );
+
+    // send a command to start the daemon
+    XEvent CommandMessage;
+    CommandMessage.type = ClientMessage;
+    CommandMessage.xclient.format = 16;
+    CommandMessage.xclient.send_event = False;
+    CommandMessage.xclient.display = display;
+    CommandMessage.xclient.window = cmdwindow;
+    CommandMessage.xclient.message_type = event_command;
+
+    CommandMessage.xclient.data.s[0] = (short) XHigh32( window );
+    CommandMessage.xclient.data.s[1] = (short) XLow32( window );
+    CommandMessage.xclient.data.s[2] = 27695;
+
+    XSendEvent( display, cmdwindow, False, 0x0000, &CommandMessage );
+    XFlush( display );
+
     XSelectInput( display, window, KeyPressMask | KeyReleaseMask );
 
     // copy the info in the internals
