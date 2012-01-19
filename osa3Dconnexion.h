@@ -47,6 +47,9 @@ class CISST_EXPORT osa3Dconnexion {
     struct Internals;
     osa3Dconnexion::Internals* internals;
 
+    osa3Dconnexion::Errno LEDOn();
+    osa3Dconnexion::Errno LEDOff();
+
  public:
 
     osa3Dconnexion();
@@ -54,8 +57,6 @@ class CISST_EXPORT osa3Dconnexion {
 
     osa3Dconnexion::Errno Open( const std::string& filename = "" );
     osa3Dconnexion::Errno Close();
-
-    bool IsOpened() const;
 
     osa3Dconnexion::Event WaitForEvent();
 

@@ -1,13 +1,22 @@
+#include <cisstCommon/cmnLogger.h>
 #include <saw3Dconnexion/osa3Dconnexion.h>
 #include <iostream>
 #include <iomanip>
 
-int main(){
+int main( int argc, char** argv ){
+
+  cmnLogger::SetMask( CMN_LOG_ALLOW_ALL );
+  cmnLogger::SetMaskFunction( CMN_LOG_ALLOW_ALL );
+  cmnLogger::SetMaskDefaultLog( CMN_LOG_ALLOW_ALL );
 
   osa3Dconnexion spacenavigator;
-  spacenavigator.Open( "/dev/input/js0" );
+  if( argc == 2 ) { spacenavigator.Open( argv[1] ); }
+  else            { spacenavigator.Open(); }
+    
+  bool button1=false, button2=false;
 
-  while( 1 ){
+  std::cout << "Press both buttons to exit. " << std::endl;
+  while( !button1 || !button2 ){
 
     osa3Dconnexion::Event event = spacenavigator.WaitForEvent();
     switch( event.type ){
@@ -23,10 +32,18 @@ int main(){
 
     case osa3Dconnexion::Event::BUTTON_PRESSED:
       std::cout << "Button " << event.button << " pressed." << std::endl;
+      if( event.button == osa3Dconnexion::Event::BUTTON1 )
+	{ button1 = true; };
+      if( event.button == osa3Dconnexion::Event::BUTTON2 )
+	{ button2 = true; };
       break;
 
     case osa3Dconnexion::Event::BUTTON_RELEASED:
       std::cout << "Button " << event.button << " released." << std::endl;
+      if( event.button == osa3Dconnexion::Event::BUTTON1 )
+	{ button1 = false; };
+      if( event.button == osa3Dconnexion::Event::BUTTON2 )
+	{ button2 = false; };
       break;
 
     }

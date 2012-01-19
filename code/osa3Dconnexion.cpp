@@ -23,8 +23,10 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstCommon/cmnLogger.h>
 
 #if (CISST_OS == CISST_LINUX)
-#include <fcntl.h>
-#include <linux/joystick.h>
+#include <string.h>           // for memset
+#include <fcntl.h>            // for open/close read/write O_RDWR
+#include <libudev.h>
+#include <linux/joystick.h>   // for joystick event
 #else
 #endif
 
@@ -32,8 +34,10 @@ http://www.cisst.org/cisst/license.txt.
 struct osa3Dconnexion::Internals{
 
 #if (CISST_OS == CISST_LINUX)
-    std::string filename;    // device filename
-    int fd;                  // file descriptor
+    std::string inputfn;     // input filename
+    std::string eventfn;     // event filename
+    int inputfd;             // file descriptor for input device
+    int eventfd;             // file descriptor for event device (LED)
     long long data[6];       // state of the device (events are per axis)
 #else
 #endif
@@ -52,7 +56,8 @@ osa3Dconnexion::osa3Dconnexion() :
     // initialize the structure
 #if (CISST_OS == CISST_LINUX)
 
-    internals->fd = -1;
+    internals->inputfd = -1;
+    internals->eventfd = -1;
     for( size_t i=0; i<6; i++ ){ internals->data[i] = 0; }
 
 #else
@@ -66,11 +71,7 @@ osa3Dconnexion::~osa3Dconnexion(){
         
 #if (CISST_OS == CISST_LINUX)
 
-        // close the device if not already closed
-        if( !IsOpened() ){
-            if( close( internals->fd ) == -1 )
-                { CMN_LOG_RUN_ERROR << "Failed to close." << std::endl; }
-        }
+        Close();
 
 #else
 #endif
@@ -81,25 +82,6 @@ osa3Dconnexion::~osa3Dconnexion(){
 
 }
 
-bool osa3Dconnexion::IsOpened() const {
-
-    bool isopened = false;
-
-    if( internals != NULL ){
-
-#if (CISST_OS == CISST_LINUX)
-
-        isopened = (internals->fd != -1 );
-
-#else
-#endif
-
-    }
-
-    return isopened;
-
-}
-
 osa3Dconnexion::Errno osa3Dconnexion::Open( const std::string& filename ){
 
     if( internals != NULL ){
@@ -107,18 +89,104 @@ osa3Dconnexion::Errno osa3Dconnexion::Open( const std::string& filename ){
 #if (CISST_OS == CISST_LINUX)
 
         // only open if device is closed
-        if( !IsOpened() ){
+        if( internals->inputfd == -1 ){
 
-            internals->filename = filename;
-            internals->fd = open( filename.c_str(), O_RDWR );
+            if( filename.empty() ){
 
-            if( !IsOpened() ){
-                CMN_LOG_RUN_ERROR << "Failed to open " << filename << std::endl;
-                return osa3Dconnexion::EFAILURE;
+                struct udev* udev;
+                struct udev_enumerate* enumerate;
+                struct udev_list_entry *devices, *dev_list_entry;;
+                udev = udev_new();
+                if( udev == NULL ){
+                    CMN_LOG_RUN_ERROR << "Failed to create udev context"<<std::endl;
+                    return osa3Dconnexion::EFAILURE;
+                }
+                
+                // list the devices
+                enumerate = udev_enumerate_new( udev );
+                // only keep "input" devices (as in /dev/input")
+                udev_enumerate_add_match_subsystem( enumerate, "input" );
+                udev_enumerate_scan_devices( enumerate );
+                devices = udev_enumerate_get_list_entry( enumerate );
+                
+                // iterate through all the input devices
+                udev_list_entry_foreach( dev_list_entry, devices ){
+                    
+                    const char *path;
+                    struct udev_device* dev;
+                    
+                    // sysfs path (i.e. /sys/devices/)
+                    path = udev_list_entry_get_name( dev_list_entry );
+                    dev = udev_device_new_from_syspath( udev, path );
+
+                    // some path to a /dev
+                    const char* devfilename = udev_device_get_devnode( dev );
+                    if( devfilename != NULL ){
+                        
+                        // keep usb devices
+                        struct udev_device* usbdev = 
+                            udev_device_get_parent_with_subsystem_devtype( dev, "usb", "usb_device" );
+                        
+                        // get vendor/product ID
+                        const char* vendor = NULL;
+                        const char* product = NULL;
+                        vendor=udev_device_get_sysattr_value(usbdev,"idVendor");
+                        product=udev_device_get_sysattr_value(usbdev, "idProduct");
+                        
+                        if( vendor != NULL && product != NULL ){
+                            
+                            // 3Dconnexion vendorID and SpaceNavigator productID
+                            if( strcmp( vendor, "046d" ) == 0 &&
+                                strcmp( product, "c626" ) == 0 ){
+                                
+                                std::string tmp( devfilename );
+                                if( tmp.find( "js" ) != std::string::npos )
+                                    { internals->inputfn = tmp; }
+                                if( tmp.find( "event" ) != std::string::npos )
+                                    { internals->eventfn = tmp; }
+                            }
+                        }
+                    }
+                    
+                    udev_device_unref(dev);
+                    
+                }
+
+                if( !internals->inputfn.empty() && !internals->eventfn.empty() ){
+
+                    // try to open the input
+                    internals->inputfd = open(internals->inputfn.c_str(), O_RDONLY);
+                    if( internals->inputfd == -1 ){
+                        CMN_LOG_RUN_ERROR << "Failed to open "
+                                          << internals->inputfn << std::endl;
+                        return osa3Dconnexion::EFAILURE;
+                    }
+                    
+                    // try to open the event (not critical)
+                    internals->eventfd = open(internals->eventfn.c_str(), O_RDWR); \
+                    if( internals->inputfd != -1 )
+                        { LEDOn(); }
+                    else{
+                        CMN_LOG_RUN_ERROR << "Failed to open "
+                                          << internals->eventfn << std::endl;
+                    }
+                    
+                }
+                
             }
+            else{
 
+                // try to open the input
+                internals->inputfn = filename;
+                internals->inputfd = open(internals->inputfn.c_str(), O_RDWR);
+                if( internals->inputfd == -1 ){
+                    CMN_LOG_RUN_ERROR << "Failed to open "
+                                      << internals->inputfn << std::endl;
+                    return osa3Dconnexion::EFAILURE;
+                }
+                
+            }
         }
-
         else{
             CMN_LOG_RUN_ERROR << "Device is already open." << std::endl;
             return osa3Dconnexion::EFAILURE;
@@ -137,17 +205,90 @@ osa3Dconnexion::Errno osa3Dconnexion::Close(){
     if( internals != NULL ){
         
 #if (CISST_OS == CISST_LINUX)
+        
+        // close the device if not already closed
+        if( internals->inputfd != -1 ){
+            if( close( internals->inputfd ) == -1 )
+                { CMN_LOG_RUN_ERROR << "Failed to close input." << std::endl; }
+        }
+    
+        // close the device if not already closed
+        if( internals->eventfd != -1 ){
+            LEDOff();
+            if( close( internals->eventfd ) == -1 )
+                { CMN_LOG_RUN_ERROR << "Failed to close event." << std::endl; }
+        }
+        
+#else
+#endif
 
-        // only close if device is open
-        if( IsOpened() ){
-            if( close( internals->fd ) != -1 )
-                { internals->fd = -1; }
-            else{
-                CMN_LOG_RUN_ERROR << "Failed to close." << std::endl;
+    }
+
+    return osa3Dconnexion::ESUCCESS;
+
+}
+
+osa3Dconnexion::Errno osa3Dconnexion::LEDOn(){
+
+    if( internals != NULL ){
+
+#if (CISST_OS == CISST_LINUX)
+
+        // event device must be opened
+        if( internals->eventfd != -1) {
+            struct input_event ev;
+
+            memset(&ev, 0, sizeof ev);
+            ev.type = EV_LED;
+            ev.code = LED_MISC;
+            ev.value = 1;
+        
+            if( write( internals->eventfd, &ev, sizeof(ev) ) == -1){
+                CMN_LOG_RUN_ERROR << "Failed to write event" << std::endl;
                 return osa3Dconnexion::EFAILURE;
             }
+            
         }
+        else{
+            CMN_LOG_RUN_ERROR << "Event device not opened" << std::endl;
+            return osa3Dconnexion::EFAILURE;
+        }
+    
+#else
+#endif
 
+    }
+
+    return osa3Dconnexion::ESUCCESS;
+
+}
+
+osa3Dconnexion::Errno osa3Dconnexion::LEDOff(){
+
+    if( internals != NULL ){
+
+#if (CISST_OS == CISST_LINUX)
+
+        // event device must be opened
+        if( internals->eventfd != -1) {
+            struct input_event ev;
+
+            memset(&ev, 0, sizeof ev);
+            ev.type = EV_LED;
+            ev.code = LED_MISC;
+            ev.value = 0;
+        
+            if( write( internals->eventfd, &ev, sizeof(ev) ) == -1){
+                CMN_LOG_RUN_ERROR << "Failed to write event" << std::endl;
+                return osa3Dconnexion::EFAILURE;
+            }
+            
+        }
+        else{
+            CMN_LOG_RUN_ERROR << "Event device not opened" << std::endl;
+            return osa3Dconnexion::EFAILURE;
+        }
+    
 #else
 #endif
 
@@ -167,11 +308,11 @@ osa3Dconnexion::Event osa3Dconnexion::WaitForEvent(){
 #if (CISST_OS == CISST_LINUX)
         
         // check the file descriptor
-        if( IsOpened() ){
+        if( internals->inputfd != -1 ){
             
             // read the event
             struct js_event e; 
-            if( read( internals->fd, &e, sizeof(struct js_event) ) != -1 ){
+            if( read( internals->inputfd, &e, sizeof(struct js_event) ) != -1 ){
                 
                 // copty the timestamp
                 event.timestamp = e.time;
