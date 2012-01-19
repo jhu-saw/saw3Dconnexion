@@ -30,11 +30,13 @@ if (cisst_FOUND_AS_REQUIRED)
     include_directories (${3DconnexionClient_INCLUDE_DIR})
   endif (APPLE)
 
-  add_library (saw3Dconnexion
-               ${IS_SHARED}
-               ../mts3Dconnexion.h
-               ../saw3DconnexionExport.h
-               mts3Dconnexion.cpp)
+  add_library( saw3Dconnexion ${IS_SHARED} 
+    ../saw3DconnexionExport.h
+    ../osa3Dconnexion.h
+    ../mts3Dconnexion.h
+    osa3Dconnexion.cpp
+    mts3Dconnexion.cpp )
+
   set_property (TARGET saw3Dconnexion PROPERTY FOLDER "saw3Dconnexion")
   cisst_target_link_libraries (saw3Dconnexion ${REQUIRED_CISST_LIBRARIES})
 

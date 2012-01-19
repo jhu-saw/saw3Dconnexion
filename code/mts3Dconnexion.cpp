@@ -95,6 +95,12 @@ public:
 
 #endif // CISST_DARWIN
 
+#if (CISST_OS == CISST_LINUX)
+class mts3DconnexionData {
+public:
+    bool HasInit;
+};
+#endif
 
 CMN_IMPLEMENT_SERVICES(mts3Dconnexion);
 
