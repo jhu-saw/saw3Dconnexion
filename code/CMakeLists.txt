@@ -30,17 +30,9 @@ if (cisst_FOUND_AS_REQUIRED)
   set( SOURCE_FILES mts3Dconnexion.cpp )
 
   if( "${CMAKE_SYSTEM}" MATCHES "Linux" )
-    set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR} )
-
-    find_package( UDev REQUIRED )
-    if( UDEV_FOUND )
-      set( HEADER_FILES ${HEADER_FILES} ../osa3Dconnexion.h )
-      set( SOURCE_FILES ${SOURCE_FILES} osa3Dconnexion.cpp )
-    else( UDEV_FOUND )
-      message( "Package libudev is required for Linux." )
-    endif( UDEV_FOUND )
- 
- endif( "${CMAKE_SYSTEM}" MATCHES "Linux"  )
+    set( HEADER_FILES ${HEADER_FILES} ../osa3Dconnexion.h )
+    set( SOURCE_FILES ${SOURCE_FILES} osa3Dconnexion.cpp )
+  endif( "${CMAKE_SYSTEM}" MATCHES "Linux"  )
 
   if (APPLE)
     include_directories (${3DconnexionClient_INCLUDE_DIR})
@@ -48,14 +40,12 @@ if (cisst_FOUND_AS_REQUIRED)
 
   add_library( saw3Dconnexion ${IS_SHARED} ${HEADER_FILES} ${SOURCE_FILES} )
 
-
   set_property (TARGET saw3Dconnexion PROPERTY FOLDER "saw3Dconnexion")
   cisst_target_link_libraries (saw3Dconnexion ${REQUIRED_CISST_LIBRARIES})
 
   if (APPLE)
     target_link_libraries (saw3Dconnexion ${3DconnexionClient_LIBRARY})
   endif (APPLE)
-  target_link_libraries ( saw3Dconnexion ${UDEV_LIBS} )
 
   # create/configure file for find_package (saw3Dconnexion)
   set (saw3Dconnexion_INCLUDE_DIR "${sawComponents_SOURCE_DIR}")
