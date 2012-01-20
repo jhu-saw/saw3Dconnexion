@@ -25,9 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #if (CISST_OS == CISST_LINUX)
 #include <string.h>           // for memset
 #include <fcntl.h>            // for open/close read/write O_RDWR
-#include <libudev.h>
-#include <libgen.h>
-#include <dirent.h>
+#include <libgen.h>           // for basename/dirname 
+#include <dirent.h>           // for opendir/closedir
 #include <linux/joystick.h>   // for joystick event
 #else
 #endif
@@ -36,9 +35,9 @@ http://www.cisst.org/cisst/license.txt.
 struct osa3Dconnexion::Internals{
 
 #if (CISST_OS == CISST_LINUX)
-    std::string inputfn;     // input filename
-    std::string eventfn;     // event filename
-    int inputfd;             // file descriptor for input device
+    std::string inputfn;     // input filename (i.e. /dev/input/js?)
+    std::string eventfn;     // event filename (i.e. /dev/input/event?)
+    int inputfd;             // file descriptor for input device (data)
     int eventfd;             // file descriptor for event device (LED)
     long long data[6];       // state of the device (events are per axis)
 #else

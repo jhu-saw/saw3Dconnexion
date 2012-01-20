@@ -10,8 +10,16 @@ int main( int argc, char** argv ){
   cmnLogger::SetMaskDefaultLog( CMN_LOG_ALLOW_ALL );
 
   osa3Dconnexion spacenavigator;
-  if( argc == 2 ) { spacenavigator.Open( argv[1] ); }
-  else            { spacenavigator.Open(); }
+  if( argc == 2 ){ 
+    if( spacenavigator.Open( argv[1] ) != osa3Dconnexion::ESUCCESS ){
+      std::cerr << "Failed to open device " << argv[1] << std::endl;
+      return -1;
+    }
+  }
+  else{
+    std::cerr << "Usage: " << argv[0] << " joystick_device_file" << std::endl;
+    return -1;
+  }
     
   bool button1=false, button2=false;
 
