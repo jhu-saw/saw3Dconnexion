@@ -16,42 +16,4 @@
 
 add_subdirectory (FLTK)
 add_subdirectory (Qt)
-
-# list of cisst libraries needed
-set( REQUIRED_CISST_LIBRARIES 
-     cisstCommon 
-     cisstVector 
-     cisstOSAbstraction
-     cisstMultiTask )
-
-# find cisst and make sure the required libraries have been compiled
-find_package( cisst REQUIRED ${REQUIRED_CISST_LIBRARIES} )
-
-if (cisst_FOUND_AS_REQUIRED)
-
-  # load cisst configuration
-  include (${CISST_USE_FILE})
-
-  # saw3Dconnexion has been compiled within cisst, we should find it automatically
-  find_package(saw3Dconnexion REQUIRED HINTS "${cisst_saw_BINARY_DIR}/saw/components")
-
-  if (saw3Dconnexion_FOUND)
-
-    # saw3Dconnexion configuration
-    include_directories( ${saw3Dconnexion_INCLUDE_DIR} )
-    link_directories( ${saw3Dconnexion_LIBRARY_DIR} )
-
-    # name the main executable and specifies with source files to use
-    add_executable( osa3DconnexionExample osa3DconnexionExample.cpp )
-
-    # link against non cisst libraries and saw components
-    target_link_libraries( osa3DconnexionExample ${saw3Dconnexion_LIBRARIES} )
-    # link against cisst libraries (and dependencies)
-    cisst_target_link_libraries( osa3DconnexionExample 
-      ${REQUIRED_CISST_LIBRARIES})
-
-  endif (saw3Dconnexion_FOUND)
-
-else (cisst_FOUND_AS_REQUIRED)
-  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
-endif (cisst_FOUND_AS_REQUIRED)
+add_subdirectory (osa)
