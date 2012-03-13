@@ -26,7 +26,7 @@ if (cisst_FOUND_AS_REQUIRED)
   include (${CISST_USE_FILE})
 
   # saw3Dconnexion has been compiled within cisst, we should find it automatically
-  find_package (saw3Dconnexion REQUIRED HINTS "${cisst_saw_BINARY_DIR}/saw/components")
+  cisst_find_saw_component (saw3Dconnexion REQUIRED)
 
   if (saw3Dconnexion_FOUND)
 
