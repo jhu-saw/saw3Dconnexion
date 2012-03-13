@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  $Id$
+  $Id: mts3Dconnexion.h 3243 2011-12-10 02:43:59Z adeguet1 $
 
   Author(s):  Marcin Balicki, Anton Deguet
   Created on: 2008-04-12

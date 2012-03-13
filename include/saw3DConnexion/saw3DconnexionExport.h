@@ -2,7 +2,7 @@
 /* ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab: */
 
 /*
-  $Id$
+  $Id: saw3DconnexionExport.h 3238 2011-12-08 16:14:30Z adeguet1 $
 
   Author(s):  Anton Deguet
   Created on: 2011-12-08
