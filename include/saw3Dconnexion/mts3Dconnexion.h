@@ -7,7 +7,7 @@
   Author(s):  Marcin Balicki, Anton Deguet
   Created on: 2008-04-12
 
-  (C) Copyright 2008-2011 Johns Hopkins University (JHU), All Rights
+  (C) Copyright 2008-2012 Johns Hopkins University (JHU), All Rights
   Reserved.
 
 --- begin cisst license - do not edit ---
@@ -19,95 +19,85 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
+/*!
+  \file
+  \brief SAW component for 3Dconnexion space navigator mice.
+  \ingroup sawComponents
+
+  \warning On Windows, buttons need to be configured as Button1 and Button2.
+  \warning On Mac, one needs the RunLoop to catch and propagate events and all
+           event handlers must be created/registered in the main loop (unless
+           we figure out how to run an event loop (cocoa based) on top of a
+           posix thread.
+
+  \todo Can we activate the buttons from code, i.e. not using external 3Dconnexion control panel.
+  \todo Use prm type for API? At osa level, use vctTypes?
+  \todo Add calibrate/bias function.
+  \todo Add bypassing wizard settings, looks like overall speed setting should be at max, button numbers, ...
+  \todo Test connection robustness.
+  \todo Standardize values. (max is 1600 with full speed setting for both trans and rot).
+  \todo Add button events.
+  \todo Check update rate seems sluggish with latency.
+  \todo Remove the loop timer, use the automatic one.
+  \todo Use wizard to set the buttons to 1, and 2 (keystroke #s).
+*/
+
 #ifndef _mts3Dconnexion_h
 #define _mts3Dconnexion_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <cisstParameterTypes/prmPositionCartesianGet.h>
+#include <saw3Dconnexion/saw3DconnexionExport.h>  // always include last
 
-// Always include last!
-#include <saw3Dconnexion/saw3DconnexionExport.h>
 
-/*!
-  \todo Can we activate the buttons from code, i.e. not using external 3Dconnexion control panel
-  \todo Use prm type for API?  At osa level, use vctTypes?
-  \todo Add calibrate/bias function
-  \todo Add bypassing wizard settings. //looks like overall speed setting should be at max, button numbers, ...
-  \todo Test connection robustness.
-  \todo Standardize values. (max is 1600 with full speed setting for both trans and rot)
-  \todo Add button events
-  \todo Check update rate seems sluggish with latency.
-  \todo Remove the loop timer, use the automatic one.
-  \todo Use wizard to set the buttons to 1, and 2 (keystroke #s)
-*/
+class mts3DconnexionData;  // class containing OS specific data
 
-// class containing OS specific data
-class mts3DconnexionData;
 
-class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic {
-    CMN_DECLARE_SERVICES(CMN_NO_DYNAMIC_CREATION, CMN_LOG_ALLOW_DEFAULT);
+class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic
+{
+    CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
-#if (CISST_OS == CISST_DARWIN)
-    friend void mts3DconnexionInternalMessageHandler(mts3Dconnexion * instance, const vctDynamicVector<double> & axis, int buttons);
-    void MessageHandler(const vctDynamicVector<double> & axis, int buttons);
-#endif // CISST_DARWIN
+    // platform "friendly" message handler for Cocoa events on Mac
+    friend void mts3DconnexionInternalMessageHandler(mts3Dconnexion * instance, const vctDynamicVector<double> & axis, const vctDynamicVector<bool> & buttons);
 
  public:
-    //This sets the name and calls Configure
-    mts3Dconnexion(const std::string & taskName,
-                   double period);
+    /*! Constructors */
+    mts3Dconnexion(const std::string & taskName, double period) :
+        mtsTaskPeriodic(taskName, period, false, 500) {}
+    mts3Dconnexion(const mtsTaskPeriodicConstructorArg & arg) :
+        mtsTaskPeriodic(arg) {}
 
-    //sets default "Dev1"
-    ~mts3Dconnexion();
+    /*! Destructor */
+    ~mts3Dconnexion(void) {}
 
+    /*! Device needs to be configured on the thread running the event loop
+        (main thread) on Mac. */
+    void Configure(const std::string & CMN_UNUSED(configurationName) = "");
+    /*! Device needs to be configured on the component thread on Windows. */
     void Startup(void);
     void Run(void);
-    void Cleanup(void) {};
-
-    //void SetDeviceName(std::string deviceName) {DeviceName=deviceName;};
-    //Change this to suit your application
-    //this sets the inputs and ouputs, please run this before using the other functions
-    //possible to have tasks with a variety of arrangements
-    //or multiple tasks. This should be done for convenience.
-    //called by the constructor
-    void Configure(const std::string & configurationName = "");
-
-    std::string GetConfigurationName(void) const {
-        return ConfigurationName;
-    }
+    void Cleanup(void);
 
     void ReBias(void) {
-        CMN_LOG_CLASS_INIT_ERROR << "Rebias not implemented yet" << std::endl;
+        CMN_LOG_CLASS_RUN_ERROR << "ReBias not implemented" << std::endl;
     }
 
-    //this masks the output of the device's 6 values, true is on. size 6.
-    //0 for anything that has a false flag, by default all are open.
-    //void SetAxisMask(const mtsBoolVec &mask);
-    //void SetGain(const cmnDouble &gain);
-
  protected:
-    // store data in separate state table
-    mtsStateTable DataTable;
+    void UpdateDataTable(void);
 
-    // this is the name used to loads the configuration settings from the 3dCon application
-    std::string ConfigurationName;
-
-    //state table elements
-    //6 degree input from the 3d mouse.
-    //it is displacement from 0 , proportional to force torque readings (but not precise
-    mtsDoubleVec Pose;
+    mtsStateTable * DataTable;  // store data in separate state table
+    mtsDoubleVec Axis;
     mtsBoolVec Buttons;
-
-    // do this in the running thread otherwise it won't work...
-    bool Init(void);
-
-    // see setoutputmask.
     mtsBoolVec Mask;
     mtsDouble Gain;
+    prmPositionCartesianGet Position;
 
-    // OS specific data
     mts3DconnexionData * Data;
+    std::string ConfigurationName;  // this is the name used to load the configuration settings from the 3dCon application
+    vct3 Translation;
+    vct3 Orientation;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mts3Dconnexion);
 
-#endif // _mts3Dconnexion_h
+#endif  // _mts3Dconnexion_h
