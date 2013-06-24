@@ -46,6 +46,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _mts3Dconnexion_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <cisstMultiTask/mtsVector.h>
 #include <cisstParameterTypes/prmPositionCartesianGet.h>
 #include <saw3Dconnexion/saw3DconnexionExport.h>  // always include last
 

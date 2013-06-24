@@ -23,6 +23,7 @@ http://www.cisst.org/cisst/license.txt.
 #define _UITask_h
 
 #include <cisstMultiTask/mtsTaskPeriodic.h>
+#include <cisstMultiTask/mtsVector.h>
 
 // FLTK/fluid generated header file
 #include "UI.h"
