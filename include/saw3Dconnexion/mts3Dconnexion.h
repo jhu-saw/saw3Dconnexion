@@ -92,6 +92,7 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskPeriodic
     mtsBoolVec Mask;
     mtsDouble Gain;
     prmPositionCartesianGet Position;
+    mtsBool IsConnected;
 
     mts3DconnexionData * Data;
     std::string ConfigurationName;  // this is the name used to load the configuration settings from the 3dCon application
