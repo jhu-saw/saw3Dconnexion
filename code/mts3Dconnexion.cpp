@@ -22,16 +22,19 @@ http://www.cisst.org/cisst/license.txt.
 #include <cisstVector/vctDynamicVectorTypes.h>
 #include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <saw3Dconnexion/mts3Dconnexion.h>
+#include <saw3DconnexionConfig.h>
 
 #if (CISST_OS == CISST_WINDOWS)
 #include <Windows.h>
 #import "progid:TDxInput.Device.1" no_namespace
 #elif (CISST_OS == CISST_DARWIN)
 #include <3DconnexionClient/ConnexionClientAPI.h>
+#elif (SAW_HAS_SPACENAV)
+//see http://spacenav.sourceforge.net/faq.html
+#include <spnav.h>
 #endif
 
 CMN_IMPLEMENT_SERVICES_DERIVED_ONEARG(mts3Dconnexion, mtsTaskPeriodic, mtsTaskPeriodicConstructorArg);
-
 
 class mts3DconnexionData
 {
@@ -49,6 +52,10 @@ class mts3DconnexionData
     bool Button1Pressed;
     bool Button2Pressed;
     bool Button3Pressed;
+#endif
+
+#if (SAW_HAS_SPACENAV)
+    spnav_event SpnavEvent;
 #endif
 };
 
@@ -111,6 +118,11 @@ void mts3Dconnexion::Cleanup(void)
         Data->_3DxDevice->Release();
     }
 #endif
+
+#if (SAW_HAS_SPACENAV)
+    spnav_close();
+#endif
+
 }
 
 
@@ -128,7 +140,7 @@ void mts3Dconnexion::Configure(const std::string & configurationName)
 
     DataTable = new mtsStateTable(StateTable.GetHistoryLength(), "3Dconnexion");
     AddStateTable(DataTable);
-#if (CISST_OS == CISST_DARWIN)
+#if (CISST_OS == CISST_DARWIN || SAW_HAS_SPACENAV)
     DataTable->SetAutomaticAdvance(false);  // state table is populated in MessageHandler
 #else
     DataTable->SetAutomaticAdvance(true);  // state table is populated in Run
@@ -138,6 +150,7 @@ void mts3Dconnexion::Configure(const std::string & configurationName)
     DataTable->AddData(Mask, "AxisMask");
     DataTable->AddData(Gain, "Gain");
     DataTable->AddData(Position, "Position");
+    DataTable->AddData(IsConnected, "IsConnected");
 
     mtsInterfaceProvided * providesSpaceNavigator = AddInterfaceProvided("ProvidesSpaceNavigator");
     if (providesSpaceNavigator) {
@@ -149,12 +162,14 @@ void mts3Dconnexion::Configure(const std::string & configurationName)
         providesSpaceNavigator->AddCommandWriteState(*DataTable, Gain, "SetGain");
         providesSpaceNavigator->AddCommandReadState(*DataTable, Position, "GetPositionCartesian");
         providesSpaceNavigator->AddCommandVoid(&mts3Dconnexion::ReBias, this, "ReBias");
+        providesSpaceNavigator->AddCommandReadState(*DataTable, IsConnected, "GetIsConnected");
     }
 
 #if (CISST_OS == CISST_DARWIN)
     OSErr result = InstallConnexionHandlers(mts3DconnexionMessageHandler, 0L, 0L);
     if (result != noErr) {
         CMN_LOG_CLASS_INIT_ERROR << "Failed do install handlers (error " << result << ")" << std::endl;
+        IsConnected = false;
         return;
     }
     std::string clientName = "3DxSAW";
@@ -174,6 +189,15 @@ void mts3Dconnexion::Configure(const std::string & configurationName)
     saw3DconnexionIdToInstanceMap[this->Data->ClientID] = this;  // save pointer to allow callbacks to modify this object
     CMN_LOG_CLASS_INIT_VERBOSE << "SpaceNavigator is registered with ID: " << this->Data->ClientID << std::endl;
 #endif
+
+#if (SAW_HAS_SPACENAV)
+    if(spnav_open()==-1) {
+        CMN_LOG_CLASS_INIT_ERROR << ("failed to connect to the space navigator daemon\n ");
+        IsConnected = false;
+        return;
+    }
+#endif
+    IsConnected = true;
 }
 
 
@@ -183,11 +207,15 @@ void mts3Dconnexion::Startup(void)
     HRESULT hr = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (!SUCCEEDED(hr)) {
         CMN_LOG_CLASS_INIT_ERROR << "Failed to CoInitializeEx" << std::endl;
+        IsConnected = false;
+        DataTable->Advance();
         return;
     }
     hr = Data->_3DxDevice.CreateInstance(__uuidof(Device));
     if (!SUCCEEDED(hr)) {
         CMN_LOG_CLASS_INIT_ERROR << "Failed to CreateInstance" << std::endl;
+        IsConnected = false;
+        DataTable->Advance();
         return;
     }
     Data->pSimpleDevice = Data->_3DxDevice;
@@ -195,11 +223,15 @@ void mts3Dconnexion::Startup(void)
     hr = Data->_3DxDevice->QueryInterface(&(Data->pSimpleDevice));
     if (!SUCCEEDED(hr)) {
         CMN_LOG_CLASS_INIT_ERROR << "Failed to QueryInterface" << std::endl;
+        IsConnected = false;
+        DataTable->Advance();
         return;
     }
     hr = Data->pSimpleDevice->get_Type(&type);
     if (!SUCCEEDED(hr)) {
         CMN_LOG_CLASS_INIT_ERROR << "Failed to get_Type" << std::endl;
+        IsConnected = false;
+        DataTable->Advance();
         return;
     }
     Data->m_p3DSensor = Data->pSimpleDevice->Sensor;
@@ -208,10 +240,15 @@ void mts3Dconnexion::Startup(void)
     hr = Data->pSimpleDevice->Connect();  // this returns no matter if the device is connected or not
     if (!SUCCEEDED(hr)) {
         CMN_LOG_CLASS_INIT_ERROR << "Failed to Connect" << std::endl;
+        IsConnected = false;
+        DataTable->Advance();
         return;
     }
     CMN_LOG_CLASS_INIT_VERBOSE << "SpaceNavigator is initialized" << std::endl;
 #endif
+
+    IsConnected = true;
+    DataTable->Advance();
 }
 
 
@@ -251,8 +288,34 @@ void mts3Dconnexion::Run(void)
     }
     UpdateDataTable();
 #endif
-}
 
+#if (SAW_HAS_SPACENAV)
+    //clean out all the samples in the state table.
+    while (spnav_poll_event(&Data->SpnavEvent) != 0) {
+        DataTable->Start();
+        if(Data->SpnavEvent.type == SPNAV_EVENT_MOTION) {
+            //left handed coordinate system - fix it:
+            //X to the right (as looking at the sign)
+            //Y is down
+            //Z is back (towards cable)
+            Axis[0] = Data->SpnavEvent.motion.x;
+            Axis[1] = -Data->SpnavEvent.motion.y;
+            Axis[2] = Data->SpnavEvent.motion.z;
+            Axis[3] = Data->SpnavEvent.motion.rx;
+            Axis[4] = -Data->SpnavEvent.motion.ry;
+            Axis[5] = Data->SpnavEvent.motion.rz;
+
+            // the limits are +/- 350 for all inputs
+
+        }
+        else {	/* SPNAV_EVENT_BUTTON */
+            Buttons[Data->SpnavEvent.button.bnum] = Data->SpnavEvent.button.press;
+        }
+        UpdateDataTable();
+        DataTable->Advance();
+    }
+#endif
+}
 
 void mts3Dconnexion::UpdateDataTable(void)
 {
