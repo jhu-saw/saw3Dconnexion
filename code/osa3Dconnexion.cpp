@@ -25,7 +25,8 @@ http://www.cisst.org/cisst/license.txt.
 #if (CISST_OS == CISST_LINUX)
 #include <string.h>           // for memset
 #include <fcntl.h>            // for open/close read/write O_RDWR
-#include <libgen.h>           // for basename/dirname 
+#include <libgen.h>           // for basename/dirname
+#include <unistd.h>           // for close 
 #include <dirent.h>           // for opendir/closedir
 #include <linux/joystick.h>   // for joystick event
 #else
