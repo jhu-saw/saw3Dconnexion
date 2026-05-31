@@ -1,0 +1,4 @@
+{
+  "name": "three_dconnexion",
+  "dependencies": ["cisst_ros_crtk", "saw3DconnexionCore"]
+}

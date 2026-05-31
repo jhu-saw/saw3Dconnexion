@@ -1,0 +1,48 @@
+M- cisst 1.4.0 (git: 1.4.0-23-g4cbeb97f)
+M- CISST_ROOT: /home/adeguet1/wss/dvrk/install/cisst
+M- cisst share: /home/adeguet1/wss/dvrk/install/cisst/share/cisst-1.4
+M- cmn_m: 1, cmn_kg: 1, CISST_USE_SI_UNITS is set to 1
+M- Class cmnClassRegister: SetLogMaskClassMatching: log LoD has been set to "-D -M -W -E D- M- W- E- " for the following classes matching "mts3DConnexion": mts3DConnexion, mts3DConnexionQtWidget, 
+M- Class cmnClassRegister: SetLogMaskClassMatching: log LoD has been set to "-D -M -W -E D- M- W- E- " for the following classes matching "mts3DConnexionQtWidget": mts3DConnexionQtWidget, 
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+-D cmnNamedMap::GetItem: can't find "MCS" in map "LCM"
+-D cmnNamedMap::GetItem: can't find "LCM_MCC" in map "LCM"
+E- Class mts3DConnexion: File: mts3DConnexion.cpp Line: 854 -  Configure: failed to open configuration file "install/saw3DConnexionCore/share/saw3DConnexion/saw3DConnexion-MTMR.json"
+-D cmnNamedMap::GetItem: can't find "3DConnexion" in map "LCM"
+-D cmnNamedMap::GetItem: can't find "three_dconnexion_crtk_bridge_subscribers" in map "LCM"
+-D cmnNamedMap::GetItem: can't find "three_dconnexion_crtk_bridge_events" in map "LCM"
+-D cmnNamedMap::GetItem: can't find "three_dconnexion_crtk_bridge_stats" in map "LCM"
+-D cmnNamedMap::GetItem: can't find "three_dconnexion_crtk_bridge" in map "LCM"
+-E Class mtsInterfaceRequired: AddItem: map "FunctionsWrite" already contains an item named "state_command".
+-D cmnNamedMap::GetItem: can't find "MTMR-gui-buttons" in map "LCM"
+M- Class mts3DConnexionQtWidget: Configure: 
+-D cmnNamedMap::GetItem: can't find "MTMR-gui" in map "LCM"
+E- Class mtsManagerGlobal: File: mtsManagerGlobal.cpp Line: 1176 -  Connect: no provided/output interface found: "LCM:3DConnexion:MTMR", available provided/output interface(s): ExecOut, InterfaceInternalProvided, StateTableStateTable, 
+E- Class mtsManagerLocal: File: mtsManagerLocal.cpp Line: 2030 -  Connect: failed to get connection id from Global Component Manager: MTMR-gui:Device - 3DConnexion:MTMR
+-E Class mtsManagerComponentClient: File: mtsManagerComponentClient.cpp Line: 1175 -  InterfaceLCMCommands_ComponentConnect: failed to execute "Connect Setup": mtsDescriptionConnection
+  Client:mtsDescriptionInterfaceFullName
+  ProcessName:LCM  ComponentName:MTMR-gui  InterfaceName:Device  Tags:[]  Server:mtsDescriptionInterfaceFullName
+  ProcessName:LCM  ComponentName:3DConnexion  InterfaceName:MTMR  Tags:[]  ConnectionID:2147483647
+-M Class mts3DConnexion: RemoveInterfaceRequired: removed required interface "ExecIn"
+M- Class mts3DConnexion: Create: creating thread for task 3DConnexion
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+M-M- osaThread::CreateInternal: create thread named: Unnamed
+M- Class mts3DConnexionQtWidget: Create: default create method for component "MTMR-gui"
+M- osaThread::CreateInternal: create thread named: Unnamed
+ Class mts3DConnexion: StartupInternal: started for task "3DConnexion"
+ Class mts3DConnexion: StartupInternal: started for task "3DConnexion"
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+M- osaThread::CreateInternal: create thread named: Unnamed
+ Class mts3DConnexion: StartupInternal: ended for task "3DConnexion"
+M- Class mts3DConnexion: RunInternal: 3DConnexion Wait to start.
+M- Class mts3DConnexionQtWidget: WaitForState: called for component "MTMR-gui" for state "mtsComponentState
+  State:ready" has no effect for mtsComponent
+M- Class mts3DConnexion: Start: starting task 3DConnexion
+M- Class mts3DConnexion: Start: started task 3DConnexion
+M- Class mts3DConnexionQtWidget: Start: default start method for component "MTMR-gui"
+M- Class mts3DConnexionQtWidget: mts3DConnexionQtWidget::Startup
+M- Class mts3DConnexionQtWidget: WaitForState: called for component "MTMR-gui" for state "mtsComponentState
+  State:active" has no effect for mtsComponent

@@ -1,0 +1,4 @@
+{
+  "name": "saw3DconnexionCore",
+  "dependencies": ["cisst"]
+}
