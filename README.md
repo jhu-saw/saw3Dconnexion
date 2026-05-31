@@ -113,3 +113,20 @@ ros2 run three_dconnexion three_dconnexion \
 The `Reset` button in the Qt widget sends the CRTK operating state command
 `home`, which resets the virtual Cartesian pose through the component's
 `state_command` command.
+
+## dVRK
+
+To drive a simulated PSM with the 3Dconnexion.  In first terminal:
+
+```sh
+   ros2 run dvrk_robot dvrk_system \
+    -j "$(ros2 pkg prefix three_dconnexion_config)/share/three_dconnexion_config/system-MTMR-3Dconnexion-PSM1_KIN_SIMULATED-Teleop.json"
+```
+
+In second terminal, for visualization:
+
+```sh
+   ros2 launch dvrk_model arm.launch.py arm:=PSM1 generation:=Classic simulated:=false
+```
+
+In RViz, make sure you rotate the scene so the PSM is facing you. This is the orientation assumed in ``system-MTMR-3Dconnexion-PSM1_KIN_SIMULATED-Teleop.json``.

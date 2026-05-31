@@ -22,7 +22,6 @@ add_subdirectory (components)
 
 set (saw3Dconnexion_DIR "${saw3DconnexionCore_BINARY_DIR}/components")
 add_subdirectory (examples)
-add_subdirectory (share)
 
 include (CPack)
 cpack_add_component (saw3Dconnexion)
@@ -32,5 +31,3 @@ cpack_add_component (saw3Dconnexion-Qt
                      DEPENDS saw3Dconnexion)
 cpack_add_component (saw3Dconnexion-Examples
                      DEPENDS saw3Dconnexion saw3Dconnexion-Qt)
-cpack_add_component (saw3Dconnexion-Share
-                     DEPENDS saw3Dconnexion)

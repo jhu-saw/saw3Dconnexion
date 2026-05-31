@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>three_dconnexion_config</name>
+  <version>0.1.0</version>
+  <description>saw3Dconnexion config files</description>
+
+  <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
+
+  <license>cisst</license>
+  <url>https://github.com/jhu-saw/saw3Dconnexion</url>
+
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
+  </export>
+</package>
