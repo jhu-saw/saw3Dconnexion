@@ -1,0 +1,354 @@
+// -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+// ex: set filetype=cpp softtabstop=4 shiftwidth=4 tabstop=4 cindent expandtab:
+
+inline-header {
+#include <cisstVector/vctFixedSizeVectorTypes.h>
+#include <vector>
+
+// Always include last
+#include <saw3Dconnexion/saw3DconnexionExport.h>
+}
+
+class {
+    name mts3DconnexionReportConfiguration;
+    attribute CISST_EXPORT;
+
+    member {
+        name id;
+        type int;
+        visibility public;
+        default 0;
+    }
+
+    member {
+        name offset;
+        type size_t;
+        visibility public;
+        default 1;
+    }
+
+    member {
+        name bytes;
+        type size_t;
+        visibility public;
+        default 6;
+    }
+
+    member {
+        name enabled;
+        type bool;
+        visibility public;
+        default true;
+    }
+
+    inline-header {
+    public:
+        inline mts3DconnexionReportConfiguration(const int report_id,
+                                                 const size_t report_offset,
+                                                 const size_t report_bytes,
+                                                 const bool report_enabled = true):
+            id(report_id),
+            offset(report_offset),
+            bytes(report_bytes),
+            enabled(report_enabled)
+        {}
+    }
+}
+
+class {
+    name mts3DconnexionReportsConfiguration;
+    attribute CISST_EXPORT;
+
+    member {
+        name translation;
+        type mts3DconnexionReportConfiguration;
+        visibility public;
+        default mts3DconnexionReportConfiguration(1, 1, 6);
+    }
+
+    member {
+        name rotation;
+        type mts3DconnexionReportConfiguration;
+        visibility public;
+        default mts3DconnexionReportConfiguration(2, 1, 6);
+    }
+
+    member {
+        name buttons;
+        type mts3DconnexionReportConfiguration;
+        visibility public;
+        default mts3DconnexionReportConfiguration(3, 1, 4);
+    }
+}
+
+inline-header {
+inline vctInt3 mts3DconnexionDefaultAxisMap(void) {
+    vctInt3 map;
+    map[0] = 0;
+    map[1] = 1;
+    map[2] = 2;
+    return map;
+}
+}
+
+class {
+    name mts3DconnexionAxisConfiguration;
+    attribute CISST_EXPORT;
+
+    member {
+        name scale;
+        type vctDouble3;
+        visibility public;
+        default vctDouble3(0.05);
+    }
+
+    member {
+        name sign;
+        type vctDouble3;
+        visibility public;
+        default vctDouble3(1.0);
+    }
+
+    member {
+        name axis_map;
+        type vctInt3;
+        visibility public;
+        default mts3DconnexionDefaultAxisMap();
+    }
+
+    member {
+        name full_scale;
+        type double;
+        visibility public;
+        default 350.0;
+    }
+
+    member {
+        name deadband;
+        type double;
+        visibility public;
+        default 0.02;
+    }
+
+    inline-header {
+    public:
+        inline mts3DconnexionAxisConfiguration(const vctDouble3 & axis_scale,
+                                               const double axis_full_scale = 350.0,
+                                               const double axis_deadband = 0.02):
+            scale(axis_scale),
+            sign(vctDouble3(1.0)),
+            axis_map(mts3DconnexionDefaultAxisMap()),
+            full_scale(axis_full_scale),
+            deadband(axis_deadband)
+        {}
+    }
+}
+
+class {
+    name mts3DconnexionButtonConfiguration;
+    attribute CISST_EXPORT;
+
+    member {
+        name index;
+        type unsigned int;
+        visibility public;
+        default 0;
+    }
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name suppress_events;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    inline-header {
+    public:
+        inline mts3DconnexionButtonConfiguration(const unsigned int button_index,
+                                                 const std::string & button_name,
+                                                 const bool button_suppress_events = false):
+            index(button_index),
+            name(button_name),
+            suppress_events(button_suppress_events)
+        {}
+    }
+}
+
+inline-header {
+inline std::vector<mts3DconnexionButtonConfiguration> mts3DconnexionDefaultButtonConfigurations(void) {
+    std::vector<mts3DconnexionButtonConfiguration> buttons;
+    buttons.push_back(mts3DconnexionButtonConfiguration(0, "left"));
+    buttons.push_back(mts3DconnexionButtonConfiguration(1, "right"));
+    return buttons;
+}
+}
+
+class {
+    name mts3DconnexionGripperConfiguration;
+    attribute CISST_EXPORT;
+
+    member {
+        name enabled;
+        type bool;
+        visibility public;
+        default true;
+    }
+
+    member {
+        name open_button;
+        type unsigned int;
+        visibility public;
+        default 1;
+    }
+
+    member {
+        name close_button;
+        type unsigned int;
+        visibility public;
+        default 0;
+    }
+
+    member {
+        name min;
+        type double;
+        visibility public;
+        default 0.0;
+    }
+
+    member {
+        name max;
+        type double;
+        visibility public;
+        default 1.0;
+    }
+
+    member {
+        name initial;
+        type double;
+        visibility public;
+        default 1.0;
+    }
+
+    member {
+        name rate;
+        type double;
+        visibility public;
+        default 1.0;
+    }
+}
+
+class {
+    name mts3DconnexionConfiguration;
+    attribute CISST_EXPORT;
+
+    member {
+        name name;
+        type std::string;
+        visibility public;
+    }
+
+    member {
+        name vendor_id;
+        type std::string;
+        visibility public;
+        default "256f";
+    }
+
+    member {
+        name product_id;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name serial;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name path;
+        type std::string;
+        visibility public;
+        default "";
+    }
+
+    member {
+        name lock_orientation;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    member {
+        name lock_position;
+        type bool;
+        visibility public;
+        default false;
+    }
+
+    member {
+        name read_timeout_ms;
+        type unsigned int;
+        visibility public;
+        default 1;
+    }
+
+    member {
+        name max_reports_per_run;
+        type size_t;
+        visibility public;
+        default 32;
+    }
+
+    member {
+        name max_integration_step;
+        type double;
+        visibility public;
+        default 0.05;
+    }
+
+    member {
+        name reports;
+        type mts3DconnexionReportsConfiguration;
+        visibility public;
+        default mts3DconnexionReportsConfiguration();
+    }
+
+    member {
+        name linear;
+        type mts3DconnexionAxisConfiguration;
+        visibility public;
+        default mts3DconnexionAxisConfiguration(vctDouble3(0.05), 350.0, 0.03);
+    }
+
+    member {
+        name angular;
+        type mts3DconnexionAxisConfiguration;
+        visibility public;
+        default mts3DconnexionAxisConfiguration(vctDouble3(0.8), 350.0, 0.03);
+    }
+
+    member {
+        name buttons;
+        type std::vector<mts3DconnexionButtonConfiguration>;
+        visibility public;
+        default mts3DconnexionDefaultButtonConfigurations();
+    }
+
+    member {
+        name gripper;
+        type mts3DconnexionGripperConfiguration;
+        visibility public;
+        default mts3DconnexionGripperConfiguration();
+    }
+}

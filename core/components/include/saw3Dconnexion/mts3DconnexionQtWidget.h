@@ -21,6 +21,7 @@ http://www.cisst.org/cisst/license.txt.
 
 #include <cisstCommon/cmnUnits.h>
 #include <cisstMultiTask/mtsComponent.h>
+#include <cisstMultiTask/mtsFunctionVoid.h>
 #include <cisstMultiTask/mtsFunctionWrite.h>
 #include <cisstMultiTask/mtsForwardDeclarationsQt.h>
 #include <cisstMultiTask/mtsIntervalStatistics.h>
@@ -45,9 +46,9 @@ class CISST_EXPORT mts3DconnexionQtWidget : public QWidget, public mtsComponent
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
  public:
-   mts3DconnexionQtWidget(const std::string & componentName,
+    mts3DconnexionQtWidget(const std::string & componentName,
                            const double periodInSeconds = 50.0 * cmn_ms);
-   ~mts3DconnexionQtWidget() {}
+    ~mts3DconnexionQtWidget() {}
 
     void Configure(const std::string & filename = "") override;
     void Startup(void) override;
@@ -66,10 +67,11 @@ class CISST_EXPORT mts3DconnexionQtWidget : public QWidget, public mtsComponent
     void SlotLockPosition(bool lock);
     void SlotOrientationLockedEventHandler(bool lock);
     void SlotPositionLockedEventHandler(bool lock);
+    void SlotResetOrientation(void);
+    void SlotResetPosition(void);
 
  private:
     void setupUi(void);
-    void SlotResetPose(void);
     void OrientationLockedEventHandler(const bool & lock);
     void PositionLockedEventHandler(const bool & lock);
 
@@ -81,10 +83,12 @@ class CISST_EXPORT mts3DconnexionQtWidget : public QWidget, public mtsComponent
         mtsFunctionRead measured_cp;
         mtsFunctionRead measured_cv;
         mtsFunctionRead gripper_measured_js;
-        mtsFunctionRead gripper_get_configuration_js;
+        mtsFunctionRead gripper_configuration_js;
         mtsFunctionWrite state_command;
-      mtsFunctionWrite lock_orientation;
-      mtsFunctionWrite lock_position;
+        mtsFunctionWrite lock_orientation;
+        mtsFunctionWrite lock_position;
+        mtsFunctionVoid reset_orientation;
+        mtsFunctionVoid reset_position;
         mtsFunctionRead period_statistics;
         mtsFunctionRead get_button_names;
     } Device;
@@ -98,8 +102,8 @@ class CISST_EXPORT mts3DconnexionQtWidget : public QWidget, public mtsComponent
     QLabel * QLLinearVelocity;
     QLabel * QLAngularVelocity;
     prmStateJointQtWidget * QSJWidget;
-   QCheckBox * QCBLockOrientation;
-   QCheckBox * QCBLockPosition;
+    QCheckBox * QCBLockOrientation;
+    QCheckBox * QCBLockPosition;
 
     mtsIntervalStatistics IntervalStatistics;
     mtsIntervalStatisticsQtWidget * QMIntervalStatistics;

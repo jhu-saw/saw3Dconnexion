@@ -24,6 +24,7 @@ http://www.cisst.org/cisst/license.txt.
 #include <saw3Dconnexion/mts3DconnexionQtWidget.h>
 
 #include <cisst_ros_crtk/mts_ros_crtk_bridge.h>
+#include <cisst_ros_bridge/mtsROSBridge.h>
 
 #include <json/json.h>
 
@@ -161,6 +162,17 @@ int main(int argc, char * argv[])
 
     crtkBridge->bridge_all_interfaces_provided(spaceMouse->GetName(), "",
                                                rosPeriod, tfPeriod);
+
+    // extra void commands not covered by CRTK auto-bridging
+    {
+        const std::string req = mts_ros_crtk_bridge_provided::required_interface_name_for(
+            spaceMouse->GetName(), interfaceName);
+        crtkBridge->subscribers_bridge().AddSubscriberToCommandVoid(
+            req, "reset_orientation", interfaceName + "/reset_orientation");
+        crtkBridge->subscribers_bridge().AddSubscriberToCommandVoid(
+            req, "reset_position", interfaceName + "/reset_position");
+    }
+
     crtkBridge->Connect();
 
     if (!componentManager->ConfigureJSON(managerConfig)) {

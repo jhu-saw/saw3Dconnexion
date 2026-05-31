@@ -19,13 +19,25 @@ http://www.cisst.org/cisst/license.txt.
 #ifndef _mts3Dconnexion_h
 #define _mts3Dconnexion_h
 
+#include <saw3Dconnexion/mts3DconnexionConfiguration.h>
+
+#include <cisstMultiTask/mtsFunctionWrite.h>
+#include <cisstMultiTask/mtsInterfaceProvided.h>
 #include <cisstMultiTask/mtsTaskContinuous.h>
+#include <cisstParameterTypes/prmBaseFrame.h>
+#include <cisstParameterTypes/prmConfigurationJoint.h>
+#include <cisstParameterTypes/prmOperatingState.h>
+#include <cisstParameterTypes/prmStateCartesian.h>
+#include <cisstParameterTypes/prmStateJoint.h>
+#include <cisstVector/vctFixedSizeVectorTypes.h>
 
 #include <list>
 #include <string>
+#include <vector>
 
-class mts3DconnexionData;
-class prmConfigurationJoint;
+struct hid_device_;
+typedef struct hid_device_ hid_device;
+struct hid_device_info;
 class prmPositionCartesianSet;
 
 #include <saw3Dconnexion/saw3DconnexionExport.h> // always include last
@@ -35,42 +47,83 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskContinuous
     CMN_DECLARE_SERVICES(CMN_DYNAMIC_CREATION_ONEARG, CMN_LOG_ALLOW_DEFAULT);
 
  public:
-   mts3Dconnexion(const std::string & componentName);
-   mts3Dconnexion(const mtsTaskContinuousConstructorArg & arg);
-   ~mts3Dconnexion(void);
+    mts3Dconnexion(const std::string & _component_name);
+    mts3Dconnexion(const mtsTaskContinuousConstructorArg & _arg);
+    ~mts3Dconnexion(void);
 
-    void Configure(const std::string & filename = "") override;
+    void Configure(const std::string & _filename = "") override;
     void Startup(void) override;
     void Run(void) override;
     void Cleanup(void) override;
 
-   bool IsConfigured(void) const;
-    void GetButtonNames(std::list<std::string> & result) const;
+    bool IsConfigured(void) const;
+    void GetButtonNames(std::list<std::string> & _result) const;
 
  protected:
+    struct ButtonData {
+        unsigned int index;
+        std::string name;
+        bool suppress_events;
+        bool pressed;
+        mtsFunctionWrite function;
+    };
+
     void Init(void);
     void EnumerateDevices(void) const;
     void ConfigureInterface(void);
     void OpenDevice(void);
+    bool ApplyConfiguration(void);
+    bool DeviceMatches(const hid_device_info * _device) const;
+    std::string DeviceSearchDescription(void) const;
+    std::string reference_frame(void) const;
+    const std::string & moving_frame(void) const;
 
-    void UpdateTimestamps(const double & timestamp);
+    void update_measured_cs(void);
+    void UpdateTimestamps(const double & _timestamp);
     void PollReports(void);
-    void ProcessReport(const unsigned char * report, const int length);
-    void ProcessMotionReport(const unsigned char * report,
-                             const int length,
-                             const bool linear);
-    void ProcessButtonReport(const unsigned char * report, const int length);
-    void IntegrateVirtualPose(const double & period);
-    bool ButtonState(const unsigned int & index) const;
+    void ProcessReport(const unsigned char * _report, const int _length);
+    void ProcessMotionReport(const unsigned char * _report,
+                             const int _length,
+                             const bool _linear);
+    void ProcessButtonReport(const unsigned char * _report, const int _length);
+    void IntegrateVirtualPose(const double & _period);
+    bool ButtonState(const unsigned int & _index) const;
 
-    void state_command(const std::string & command);
-   void lock_orientation(const bool & lock);
-   void lock_position(const bool & lock);
-    void move_cp(const prmPositionCartesianSet & position);
+    void state_command(const std::string & _command);
+    void lock_orientation(const bool & _lock);
+    void lock_position(const bool & _lock);
+    void set_base_frame(const prmPositionCartesianSet & _base_frame);
     void reset_pose(void);
-    void GetConfigurationJs(prmConfigurationJoint & configuration) const;
+    void reset_orientation(void);
+    void reset_position(void);
+    void configuration_js(prmConfigurationJoint & _configuration) const;
 
-   mts3DconnexionData * m_data;
+    bool m_configured;
+    mts3DconnexionConfiguration m_config;
+
+    unsigned short m_vendor_id;
+    unsigned short m_product_id;
+    bool m_match_product_id;
+
+    hid_device * m_handle;
+    mtsInterfaceProvided * m_interface;
+    double m_last_time;
+    bool m_sent_connection_error;
+
+    prmOperatingState m_operating_state;
+    mtsFunctionWrite m_operating_state_event;
+    mtsFunctionWrite m_orientation_locked_event;
+    mtsFunctionWrite m_position_locked_event;
+    prmBaseFrame m_base_frame;
+    prmStateCartesian m_local_measured_cs;
+    prmStateCartesian m_measured_cs;
+    prmStateJoint m_gripper_measured_js;
+    prmConfigurationJoint m_gripper_configuration_js;
+
+    std::list<ButtonData> m_buttons;
+    std::vector<bool> m_button_states;
+    vct3 m_raw_linear;
+    vct3 m_raw_angular;
 };
 
 CMN_DECLARE_SERVICES_INSTANTIATION(mts3Dconnexion);

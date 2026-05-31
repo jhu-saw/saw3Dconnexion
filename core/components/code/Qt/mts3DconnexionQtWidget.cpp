@@ -95,10 +95,12 @@ mts3DconnexionQtWidget::mts3DconnexionQtWidget(const std::string & componentName
         m_device_interface->AddFunction("measured_cv", Device.measured_cv);
         m_device_interface->AddFunction("gripper/measured_js",
                                         Device.gripper_measured_js, MTS_OPTIONAL);
-        m_device_interface->AddFunction("gripper/get_configuration_js",
-                                        Device.gripper_get_configuration_js, MTS_OPTIONAL);
+        m_device_interface->AddFunction("gripper/configuration_js",
+                                        Device.gripper_configuration_js, MTS_OPTIONAL);
         m_device_interface->AddFunction("lock_orientation", Device.lock_orientation);
         m_device_interface->AddFunction("lock_position", Device.lock_position);
+        m_device_interface->AddFunction("reset_orientation", Device.reset_orientation);
+        m_device_interface->AddFunction("reset_position", Device.reset_position);
         m_device_interface->AddFunction("period_statistics", Device.period_statistics);
         m_device_interface->AddFunction("get_button_names", Device.get_button_names);
         m_device_interface->AddEventHandlerWrite(&mts3DconnexionQtWidget::OrientationLockedEventHandler,
@@ -123,9 +125,9 @@ void mts3DconnexionQtWidget::Startup(void)
         show();
     }
 
-    if (Device.gripper_get_configuration_js.IsValid()) {
+    if (Device.gripper_configuration_js.IsValid()) {
         const mtsExecutionResult executionResult =
-            Device.gripper_get_configuration_js(m_gripper_configuration_js);
+            Device.gripper_configuration_js(m_gripper_configuration_js);
         if (executionResult) {
             QSJWidget->SetConfiguration(m_gripper_configuration_js);
         }
@@ -221,15 +223,19 @@ void mts3DconnexionQtWidget::setupUi(void)
     componentManager->AddComponent(QPBWidgetComponent);
     controlLayout->addWidget(QPBWidgetComponent);
 
-    QHBoxLayout * commandLayout = new QHBoxLayout;
-    QPushButton * resetButton = new QPushButton("Reset");
-    commandLayout->addWidget(resetButton);
-    connect(resetButton, &QPushButton::clicked,
-            [this](void) { this->SlotResetPose(); });
-        QCBLockOrientation = new QCheckBox("Lock Orientation");
-        commandLayout->addWidget(QCBLockOrientation);
-        QCBLockPosition = new QCheckBox("Lock Position");
-        commandLayout->addWidget(QCBLockPosition);
+    QGridLayout * commandLayout = new QGridLayout;
+    QCBLockOrientation = new QCheckBox("Lock Orientation");
+    commandLayout->addWidget(QCBLockOrientation, 0, 0);
+    QCBLockPosition = new QCheckBox("Lock Position");
+    commandLayout->addWidget(QCBLockPosition, 0, 1);
+    QPushButton * resetOrientationButton = new QPushButton("Reset Orientation");
+    commandLayout->addWidget(resetOrientationButton, 1, 0);
+    connect(resetOrientationButton, &QPushButton::clicked,
+            [this](void) { this->SlotResetOrientation(); });
+    QPushButton * resetPositionButton = new QPushButton("Reset Position");
+    commandLayout->addWidget(resetPositionButton, 1, 1);
+    connect(resetPositionButton, &QPushButton::clicked,
+            [this](void) { this->SlotResetPosition(); });
     controlLayout->addLayout(commandLayout);
     controlLayout->addStretch();
 
@@ -293,10 +299,17 @@ void mts3DconnexionQtWidget::timerEvent(QTimerEvent * CMN_UNUSED(event))
     }
 }
 
-void mts3DconnexionQtWidget::SlotResetPose(void)
+void mts3DconnexionQtWidget::SlotResetOrientation(void)
 {
-    if (Device.state_command.IsValid()) {
-        Device.state_command(std::string("home"));
+    if (Device.reset_orientation.IsValid()) {
+        Device.reset_orientation();
+    }
+}
+
+void mts3DconnexionQtWidget::SlotResetPosition(void)
+{
+    if (Device.reset_position.IsValid()) {
+        Device.reset_position();
     }
 }
 

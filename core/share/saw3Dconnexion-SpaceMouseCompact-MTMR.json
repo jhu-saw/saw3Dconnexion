@@ -1,33 +1,18 @@
 /* -*- Mode: Javascript; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 {
-    "interface-name": "MTMR",
+    "name": "MTMR",
     "vendor_id": "256f",
     "product_id": "c635",
-    "reference_frame": "MTMR_base",
-    "moving_frame": "MTMR",
-    "reports": {
-        "translation": {
-            "id": 1,
-            "offset": 1
-        },
-        "rotation": {
-            "id": 2,
-            "offset": 1
-        },
-        "buttons": {
-            "id": 3,
-            "offset": 1,
-            "bytes": 4
-        }
+    "linear": {
+        "scale": [0.05, 0.05, 0.05],
+        "full_scale": 350.0,
+        "deadband": 0.03
     },
-    "raw_full_scale": 350.0,
-    "deadband": 0.03,
-    "linear_scale": [0.05, 0.05, 0.05],
-    "angular_scale": [0.8, 0.8, 0.8],
-    "linear_axis_map": [0, 1, 2],
-    "angular_axis_map": [0, 1, 2],
-    "linear_axis_sign": [1.0, 1.0, 1.0],
-    "angular_axis_sign": [1.0, 1.0, 1.0],
+    "angular": {
+        "scale": [0.8, 0.8, 0.8],
+        "full_scale": 350.0,
+        "deadband": 0.03
+    },
     "buttons": [
         {
             "index": 0,
@@ -39,8 +24,6 @@
         }
     ],
     "gripper": {
-        "provide": true,
-        "emulate": true,
         "close_button": 0,
         "open_button": 1,
         "min": 0.0,
