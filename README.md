@@ -47,8 +47,7 @@ saw3DconnexionQtExample \
 ```
 
 The default MTMR sample matches the older SpaceNavigator USB id
-`046d:c626`.  For newer devices using `256f:c635`, use
-`saw3Dconnexion-SpaceMouseCompact-MTMR.json` or copy one of these files and
+`046d:c626`.  For newer devices using `256f:c635`, copy the sample file and
 set `vendor_id`/`product_id` to the ids reported in the startup log.
 
 If the device is listed by hidapi but fails to open on Linux, check access to
