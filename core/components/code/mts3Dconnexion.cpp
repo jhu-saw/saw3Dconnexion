@@ -494,6 +494,11 @@ bool mts3Dconnexion::IsConfigured(void) const
     return m_configured;
 }
 
+std::string mts3Dconnexion::GetDeviceName(void) const
+{
+    return m_config.name;
+}
+
 void mts3Dconnexion::Startup(void)
 {
     if (m_handle) {
@@ -506,7 +511,6 @@ void mts3Dconnexion::Startup(void)
     m_last_time = mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime();
     StateTable.Start();
     update_measured_cs();
-    UpdateTimestamps(m_last_time);
     StateTable.Advance();
     if (m_operating_state_event.IsValid()) {
         m_operating_state_event(m_operating_state);
@@ -535,8 +539,6 @@ void mts3Dconnexion::Run(void)
 
     PollReports();
     IntegrateVirtualPose(period);
-    UpdateTimestamps(now);
-
     StateTable.Advance();
 }
 
@@ -582,17 +584,6 @@ void mts3Dconnexion::set_base_frame(const prmPositionCartesianSet & _base_frame)
         m_base_frame.transform().Assign(vctFrm4x4::Identity());
     }
     update_measured_cs();
-}
-
-void mts3Dconnexion::UpdateTimestamps(const double & _timestamp)
-{
-    m_operating_state.SetTimestamp(_timestamp);
-    m_base_frame.SetTimestamp(_timestamp);
-    m_local_measured_cs.Timestamp() = _timestamp;
-    m_measured_cs.Timestamp() = _timestamp;
-    if (m_config.gripper.enabled) {
-        m_gripper_measured_js.SetTimestamp(_timestamp);
-    }
 }
 
 void mts3Dconnexion::PollReports(void)
@@ -725,7 +716,7 @@ void mts3Dconnexion::ProcessButtonReport(const unsigned char * _report,
             if (!button.suppress_events) {
                 prmEventButton event;
                 event.SetValid(true);
-                event.SetTimestamp(mtsManagerLocal::GetInstance()->GetTimeServer().GetRelativeTime());
+                event.SetTimestamp(StateTable.GetTic());
                 event.SetType(pressed ? prmEventButton::PRESSED : prmEventButton::RELEASED);
                 button.function(event);
             }
