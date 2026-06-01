@@ -16,54 +16,16 @@ http://www.cisst.org/cisst/license.txt.
 --- end cisst license ---
 */
 
-#include <cisstCommon/cmnCommandLineOptions.h>
-#include <cisstCommon/cmnQt.h>
 #include <cisstCommon/cmnUnits.h>
+#include <cisstMultiTask/mtsCommandLineOptionsQt.h>
 #include <cisstMultiTask/mtsTaskManager.h>
 #include <saw3Dconnexion/mts3Dconnexion.h>
 #include <saw3Dconnexion/mts3DconnexionQtWidget.h>
 
-#include <json/json.h>
-
 #include <QApplication>
 #include <QTabWidget>
 
-#include <fstream>
 #include <iostream>
-#include <list>
-
-namespace {
-
-static bool ReadInterfaceNameFromJSON(const std::string & filename,
-                                      std::string & interfaceName)
-{
-    if (filename == "") {
-        return false;
-    }
-
-    std::ifstream jsonStream(filename.c_str());
-    Json::Value jsonConfig;
-    Json::Reader jsonReader;
-    if (!jsonReader.parse(jsonStream, jsonConfig)) {
-        return false;
-    }
-
-    if (!jsonConfig["interface-name"].empty()) {
-        interfaceName = jsonConfig["interface-name"].asString();
-        return true;
-    }
-    if (!jsonConfig["interface"].empty()) {
-        interfaceName = jsonConfig["interface"].asString();
-        return true;
-    }
-    if (!jsonConfig["name"].empty()) {
-        interfaceName = jsonConfig["name"].asString();
-        return true;
-    }
-    return false;
-}
-
-} // namespace
 
 int main(int argc, char * argv[])
 {
@@ -74,11 +36,9 @@ int main(int argc, char * argv[])
     cmnLogger::SetMaskClassMatching("mts3DconnexionQtWidget", CMN_LOG_ALLOW_ALL);
     cmnLogger::AddChannel(std::cerr, CMN_LOG_ALLOW_ERRORS_AND_WARNINGS);
 
-    cmnCommandLineOptions options;
+    mtsCommandLineOptionsQt options;
     std::string jsonConfigFile = "";
     std::string componentName = "3Dconnexion";
-    std::string interfaceName = "MTMR";
-    std::list<std::string> managerConfig;
 
     options.AddOptionOneValue("j", "json-config",
                               "json configuration file",
@@ -86,21 +46,9 @@ int main(int argc, char * argv[])
     options.AddOptionOneValue("n", "component-name",
                               "component name",
                               cmnCommandLineOptions::OPTIONAL_OPTION, &componentName);
-    options.AddOptionOneValue("i", "interface-name",
-                              "provided interface name",
-                              cmnCommandLineOptions::OPTIONAL_OPTION, &interfaceName);
-    options.AddOptionMultipleValues("m", "component-manager",
-                                    "JSON files to configure component manager",
-                                    cmnCommandLineOptions::OPTIONAL_OPTION, &managerConfig);
-    options.AddOptionNoValue("D", "dark-mode",
-                             "replaces the default Qt palette with darker colors");
 
     if (!options.Parse(argc, argv, std::cerr)) {
         return -1;
-    }
-
-    if (!options.IsSet("interface-name")) {
-        ReadInterfaceNameFromJSON(jsonConfigFile, interfaceName);
     }
 
     std::string arguments;
@@ -114,8 +62,6 @@ int main(int argc, char * argv[])
     } else {
         std::cout << "Using JSON configuration \"" << jsonConfigFile << "\"" << std::endl;
     }
-    std::cout << "Using component \"" << componentName
-              << "\" and interface \"" << interfaceName << "\"" << std::endl;
 
     mts3Dconnexion * spaceMouse = new mts3Dconnexion(componentName);
     spaceMouse->Configure(jsonConfigFile);
@@ -125,29 +71,25 @@ int main(int argc, char * argv[])
         delete spaceMouse;
         return -1;
     }
+    const std::string deviceName = spaceMouse->GetDeviceName();
+    std::cout << "Using component \"" << componentName
+              << "\" and device \"" << deviceName << "\"" << std::endl;
 
     mtsManagerLocal * componentManager = mtsComponentManager::GetInstance();
     componentManager->AddComponent(spaceMouse);
 
     QApplication application(argc, argv);
-    cmnQt::QApplicationExitsOnCtrlC();
-    if (options.IsSet("dark-mode")) {
-        cmnQt::SetDarkMode();
-    }
 
     QTabWidget * tabWidget = new QTabWidget;
     mts3DconnexionQtWidget * deviceWidget =
-        new mts3DconnexionQtWidget(interfaceName + "-gui");
+        new mts3DconnexionQtWidget(deviceName + "-gui");
     deviceWidget->Configure();
     componentManager->AddComponent(deviceWidget);
     componentManager->Connect(deviceWidget->GetName(), "Device",
-                              spaceMouse->GetName(), interfaceName);
-    tabWidget->addTab(deviceWidget, interfaceName.c_str());
+                              spaceMouse->GetName(), deviceName);
+    tabWidget->addTab(deviceWidget, deviceName.c_str());
 
-    if (!componentManager->ConfigureJSON(managerConfig)) {
-        CMN_LOG_INIT_ERROR << "Configure: failed to configure component-manager, check cisstLog for error messages" << std::endl;
-        return -1;
-    }
+    options.Apply();
 
     componentManager->CreateAllAndWait(5.0 * cmn_s);
     componentManager->StartAllAndWait(5.0 * cmn_s);

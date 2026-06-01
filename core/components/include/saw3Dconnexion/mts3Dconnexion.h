@@ -57,6 +57,7 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskContinuous
     void Cleanup(void) override;
 
     bool IsConfigured(void) const;
+    std::string GetDeviceName(void) const;
     void GetButtonNames(std::list<std::string> & _result) const;
 
  protected:
@@ -79,7 +80,6 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskContinuous
     const std::string & moving_frame(void) const;
 
     void update_measured_cs(void);
-    void UpdateTimestamps(const double & _timestamp);
     void PollReports(void);
     void ProcessReport(const unsigned char * _report, const int _length);
     void ProcessMotionReport(const unsigned char * _report,
