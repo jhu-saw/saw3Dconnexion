@@ -87,6 +87,7 @@ mts3DconnexionQtWidget::mts3DconnexionQtWidget(const std::string & componentName
     QPOState(new prmOperatingStateQtWidget()),
     QPBWidgetComponent(nullptr)
 {
+    this->AddTag("UI");
     m_device_interface = AddInterfaceRequired("Device");
     if (m_device_interface) {
         QMMessage->SetInterfaceRequired(m_device_interface);

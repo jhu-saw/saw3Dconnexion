@@ -3,6 +3,7 @@
 
 inline-header {
 #include <cisstVector/vctFixedSizeVectorTypes.h>
+#include <cisstParameterTypes/prmBaseFrame.h>
 #include <vector>
 
 // Always include last
@@ -350,5 +351,13 @@ class {
         type mts3DconnexionGripperConfiguration;
         visibility public;
         default mts3DconnexionGripperConfiguration();
+    }
+
+    member {
+        name base_frame;
+        type prmBaseFrame;
+        visibility public;
+        default prmBaseFrame();
+        description Optional fixed base frame applied to the local measured cartesian state;
     }
 }

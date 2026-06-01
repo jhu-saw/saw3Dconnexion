@@ -114,7 +114,7 @@ class CISST_EXPORT mts3Dconnexion: public mtsTaskContinuous
     mtsFunctionWrite m_operating_state_event;
     mtsFunctionWrite m_orientation_locked_event;
     mtsFunctionWrite m_position_locked_event;
-    prmBaseFrame m_base_frame;
+
     prmStateCartesian m_local_measured_cs;
     prmStateCartesian m_measured_cs;
     prmStateJoint m_gripper_measured_js;

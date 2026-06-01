@@ -134,8 +134,6 @@ void mts3Dconnexion::Init(void)
     m_button_states.assign(64, false);
     m_raw_linear.Zeros();
     m_raw_angular.Zeros();
-    m_base_frame.reference_frame() = "user";
-    m_base_frame.transform().Assign(vctFrm4x4::Identity());
 }
 
 std::string mts3Dconnexion::reference_frame(void) const
@@ -337,7 +335,7 @@ void mts3Dconnexion::ConfigureInterface(void)
 
     StateTable.SetAutomaticAdvance(false);
     StateTable.AddData(m_operating_state, "operating_state");
-    StateTable.AddData(m_base_frame, "base_frame");
+    StateTable.AddData(m_config.base_frame, "base_frame");
     StateTable.AddData(m_local_measured_cs, "local/measured_cs");
     StateTable.AddData(m_measured_cs, "measured_cs");
     if (m_config.gripper.enabled) {
@@ -371,7 +369,7 @@ void mts3Dconnexion::ConfigureInterface(void)
     }
 
     m_interface->AddMessageEvents();
-    m_interface->AddCommandReadState(StateTable, m_base_frame, "base_frame");
+    m_interface->AddCommandReadState(StateTable, m_config.base_frame, "base_frame");
     m_interface->AddCommandReadState(StateTable, m_local_measured_cs, "local/measured_cs");
     m_interface->AddCommandFilteredReadState(StateTable, m_local_measured_cs,
                                              prmStateCartesian::ToPositionCartesianGet,
@@ -552,7 +550,7 @@ void mts3Dconnexion::Cleanup(void)
 
 void mts3Dconnexion::update_measured_cs(void)
 {
-    if (!m_base_frame.Valid() || !m_base_frame.Fixed()) {
+    if (!m_config.base_frame.ValidDefinition() || !m_config.base_frame.Fixed()) {
         m_measured_cs = m_local_measured_cs;
         m_measured_cs.PositionIsValid() = false;
         m_measured_cs.VelocityIsValid() = false;
@@ -561,7 +559,7 @@ void mts3Dconnexion::update_measured_cs(void)
     }
 
     try {
-        m_base_frame.ApplyTo(m_local_measured_cs, m_measured_cs);
+        m_config.base_frame.ApplyTo(m_local_measured_cs, m_measured_cs);
     } catch (std::exception & _exception) {
         CMN_LOG_CLASS_RUN_ERROR << "update_measured_cs: failed to apply base_frame ("
                                 << _exception.what() << ")" << std::endl;
@@ -575,13 +573,13 @@ void mts3Dconnexion::update_measured_cs(void)
 void mts3Dconnexion::set_base_frame(const prmPositionCartesianSet & _base_frame)
 {
     if (_base_frame.Valid()) {
-        m_base_frame.reference_frame() = _base_frame.ReferenceFrame().empty()
+        m_config.base_frame.reference_frame() = _base_frame.ReferenceFrame().empty()
             ? std::string("user")
             : _base_frame.ReferenceFrame();
-        m_base_frame.transform().FromNormalized(_base_frame.Goal());
+        m_config.base_frame.transform().FromNormalized(_base_frame.Goal());
     } else {
-        m_base_frame.reference_frame().clear();
-        m_base_frame.transform().Assign(vctFrm4x4::Identity());
+        m_config.base_frame.reference_frame().clear();
+        m_config.base_frame.transform().Assign(vctFrm4x4::Identity());
     }
     update_measured_cs();
 }
