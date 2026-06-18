@@ -25,7 +25,6 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
 
 find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-
 cisst_set_output_path ()
 
 find_package (saw3Dconnexion 0.1.0)

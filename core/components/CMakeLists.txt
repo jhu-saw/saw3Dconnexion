@@ -20,8 +20,6 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
 
 find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-
-
 if (NOT CISST_HAS_JSON)
   message (FATAL_ERROR "saw3Dconnexion requires cisst to be built with JSON")
 endif ()
