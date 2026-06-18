@@ -23,38 +23,33 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstParameterTypesQt
                               cisstQt)
 
-find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
 
-  include (${CISST_USE_FILE})
-  cisst_set_output_path ()
+cisst_set_output_path ()
 
-  find_package (saw3Dconnexion 0.1.0)
+find_package (saw3Dconnexion 0.1.0)
 
-  if (saw3Dconnexion_FOUND AND CISST_HAS_QT)
+if (saw3Dconnexion_FOUND AND CISST_HAS_QT)
 
-    include_directories (${saw3Dconnexion_INCLUDE_DIR})
-    link_directories (${saw3Dconnexion_LIBRARY_DIR})
+  include_directories (${saw3Dconnexion_INCLUDE_DIR})
+  link_directories (${saw3Dconnexion_LIBRARY_DIR})
 
-    add_executable (saw3DconnexionQtExample main.cpp)
-    set_target_properties (saw3DconnexionQtExample PROPERTIES
-                           COMPONENTS saw3Dconnexion-Examples
-                           FOLDER "saw3Dconnexion")
+  add_executable (saw3DconnexionQtExample main.cpp)
+  set_target_properties (saw3DconnexionQtExample PROPERTIES
+                         COMPONENTS saw3Dconnexion-Examples
+                         FOLDER "saw3Dconnexion")
 
-    target_link_libraries (saw3DconnexionQtExample
-                           ${saw3Dconnexion_LIBRARIES}
-                           ${QT_LIBRARIES})
+  target_link_libraries (saw3DconnexionQtExample
+                         ${saw3Dconnexion_LIBRARIES}
+                         ${QT_LIBRARIES}
+                         ${cisst_LIBRARIES})
 
-    cisst_target_link_libraries (saw3DconnexionQtExample ${REQUIRED_CISST_LIBRARIES})
+  install (TARGETS saw3DconnexionQtExample COMPONENT saw3Dconnexion-Examples
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
 
-    install (TARGETS saw3DconnexionQtExample COMPONENT saw3Dconnexion-Examples
-             RUNTIME DESTINATION bin
-             LIBRARY DESTINATION lib
-             ARCHIVE DESTINATION lib)
-
-  else (saw3Dconnexion_FOUND AND CISST_HAS_QT)
-    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires saw3Dconnexion and cisstQt")
-  endif (saw3Dconnexion_FOUND AND CISST_HAS_QT)
-
-endif (cisst_FOUND_AS_REQUIRED)
+else (saw3Dconnexion_FOUND AND CISST_HAS_QT)
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires saw3Dconnexion and cisstQt")
+endif (saw3Dconnexion_FOUND AND CISST_HAS_QT)

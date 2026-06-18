@@ -49,42 +49,38 @@ set (REQUIRED_CISST_LIBRARIES
   cisstParameterTypesQt
   cisstQt)
 
-find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
 
-  include (${CISST_USE_FILE})
-  cisst_set_output_path ()
+cisst_set_output_path ()
 
-  find_package (saw3Dconnexion 0.1.0)
+find_package (saw3Dconnexion 0.1.0)
 
-  if (saw3Dconnexion_FOUND)
+if (saw3Dconnexion_FOUND)
 
-    include_directories (${saw3Dconnexion_INCLUDE_DIR} ${three_dconnexion_SOURCE_DIR})
-    link_directories (${saw3Dconnexion_LIBRARY_DIR})
+  include_directories (${saw3Dconnexion_INCLUDE_DIR} ${three_dconnexion_SOURCE_DIR})
+  link_directories (${saw3Dconnexion_LIBRARY_DIR})
 
-    add_executable (three_dconnexion src/three_dconnexion.cpp)
+  add_executable (three_dconnexion src/three_dconnexion.cpp)
     target_link_libraries (three_dconnexion
       ${saw3Dconnexion_LIBRARIES}
-      ${catkin_LIBRARIES})
+      ${catkin_LIBRARIES}
+      ${cisst_LIBRARIES})
 
-    cisst_target_link_libraries (three_dconnexion ${REQUIRED_CISST_LIBRARIES})
+  install (TARGETS three_dconnexion
+    LIBRARY DESTINATION lib/${PROJECT_NAME}
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+    LIBRARY DESTINATION lib
+    INCLUDES DESTINATION include)
 
-    install (TARGETS three_dconnexion
-      LIBRARY DESTINATION lib/${PROJECT_NAME}
-      RUNTIME DESTINATION lib/${PROJECT_NAME}
-      LIBRARY DESTINATION lib
-      INCLUDES DESTINATION include)
+  if (ROS_VERSION EQUAL 2)
+    ament_target_dependencies (
+      three_dconnexion
+      ${ROS2_depends}
+      )
+    ament_package ()
+  endif ()
 
-    if (ROS_VERSION EQUAL 2)
-      ament_target_dependencies (
-        three_dconnexion
-        ${ROS2_depends}
-        )
-      ament_package ()
-    endif ()
-
-  else (saw3Dconnexion_FOUND)
-    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires saw3Dconnexion")
-  endif (saw3Dconnexion_FOUND)
-endif (cisst_FOUND_AS_REQUIRED)
+else (saw3Dconnexion_FOUND)
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires saw3Dconnexion")
+endif (saw3Dconnexion_FOUND)

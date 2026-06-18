@@ -20,35 +20,30 @@ set (REQUIRED_CISST_LIBRARIES
      cisstParameterTypesQt
      cisstQt)
 
-find_package (cisst REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
 
-  include (${CISST_USE_FILE})
 
-  include_directories (${CMAKE_CURRENT_BINARY_DIR})
-  if (CISST_HAS_QT4)
-    qt4_wrap_cpp (SAW_3D_CONNEXION_QT_WRAP_CPP
-                  ${saw3Dconnexion_HEADER_DIR}/mts3DconnexionQtWidget.h)
-  else (CISST_HAS_QT4)
-    set (CMAKE_AUTOMOC ON)
-  endif (CISST_HAS_QT4)
+include_directories (${CMAKE_CURRENT_BINARY_DIR})
+if (CISST_HAS_QT4)
+  qt4_wrap_cpp (SAW_3D_CONNEXION_QT_WRAP_CPP
+                ${saw3Dconnexion_HEADER_DIR}/mts3DconnexionQtWidget.h)
+else (CISST_HAS_QT4)
+  set (CMAKE_AUTOMOC ON)
+endif (CISST_HAS_QT4)
 
-  add_library (saw3DconnexionQt
-               ${saw3Dconnexion_HEADER_DIR}/saw3DconnexionQtExport.h
-               ${saw3Dconnexion_HEADER_DIR}/mts3DconnexionQtWidget.h
-               mts3DconnexionQtWidget.cpp
-               ${SAW_3D_CONNEXION_QT_WRAP_CPP})
-  set_target_properties (saw3DconnexionQt PROPERTIES
-                         VERSION ${saw3Dconnexion_VERSION}
-                         FOLDER "saw3Dconnexion")
-  cisst_target_link_libraries (saw3DconnexionQt ${REQUIRED_CISST_LIBRARIES})
+add_library (saw3DconnexionQt
+             ${saw3Dconnexion_HEADER_DIR}/saw3DconnexionQtExport.h
+             ${saw3Dconnexion_HEADER_DIR}/mts3DconnexionQtWidget.h
+             mts3DconnexionQtWidget.cpp
+             ${SAW_3D_CONNEXION_QT_WRAP_CPP})
+set_target_properties (saw3DconnexionQt PROPERTIES
+                       VERSION ${saw3Dconnexion_VERSION}
+                       FOLDER "saw3Dconnexion")
+target_link_libraries (saw3DconnexionQt ${cisst_LIBRARIES})
 
-  install (TARGETS saw3DconnexionQt COMPONENT saw3Dconnexion-Qt
-           RUNTIME DESTINATION bin
-           LIBRARY DESTINATION lib
-           ARCHIVE DESTINATION lib)
+install (TARGETS saw3DconnexionQt COMPONENT saw3Dconnexion-Qt
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib
+         ARCHIVE DESTINATION lib)
 
-else (cisst_FOUND_AS_REQUIRED)
-  message ("Information: code will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
-endif (cisst_FOUND_AS_REQUIRED)

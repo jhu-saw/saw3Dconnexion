@@ -18,78 +18,73 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstMultiTask
                               cisstParameterTypes)
 
-find_package (cisst 1.4.0 REQUIRED ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
-if (cisst_FOUND_AS_REQUIRED)
 
-  include (${CISST_USE_FILE})
 
-  if (NOT CISST_HAS_JSON)
-    message (FATAL_ERROR "saw3Dconnexion requires cisst to be built with JSON")
-  endif ()
+if (NOT CISST_HAS_JSON)
+  message (FATAL_ERROR "saw3Dconnexion requires cisst to be built with JSON")
+endif ()
 
-  cisst_set_output_path ()
+cisst_set_output_path ()
 
-  find_file (hidapi_HEADER_FILE
-             hidapi/hidapi.h
-             HINTS /usr/include)
+find_file (hidapi_HEADER_FILE
+           hidapi/hidapi.h
+           HINTS /usr/include)
 
-  if (hidapi_HEADER_FILE)
-    string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
-    include_directories (${hidapi_INCLUDE_DIR})
-    set (hidapi_LIBRARIES "hidapi-hidraw")
+if (hidapi_HEADER_FILE)
+  string (REPLACE "/hidapi/hidapi.h" "" hidapi_INCLUDE_DIR ${hidapi_HEADER_FILE})
+  include_directories (${hidapi_INCLUDE_DIR})
+  set (hidapi_LIBRARIES "hidapi-hidraw")
 
-    set (saw3Dconnexion_INCLUDE_DIR
-         "${saw3Dconnexion_SOURCE_DIR}/include"
-         "${saw3Dconnexion_BINARY_DIR}/include")
-    set (saw3Dconnexion_HEADER_DIR "${saw3Dconnexion_SOURCE_DIR}/include/saw3Dconnexion")
-    set (saw3Dconnexion_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
-    set (saw3Dconnexion_LIBRARIES saw3Dconnexion ${hidapi_LIBRARIES})
+  set (saw3Dconnexion_INCLUDE_DIR
+       "${saw3Dconnexion_SOURCE_DIR}/include"
+       "${saw3Dconnexion_BINARY_DIR}/include")
+  set (saw3Dconnexion_HEADER_DIR "${saw3Dconnexion_SOURCE_DIR}/include/saw3Dconnexion")
+  set (saw3Dconnexion_LIBRARY_DIR "${LIBRARY_OUTPUT_PATH}")
+  set (saw3Dconnexion_LIBRARIES saw3Dconnexion ${hidapi_LIBRARIES})
 
-    include_directories (BEFORE ${saw3Dconnexion_INCLUDE_DIR})
+  include_directories (BEFORE ${saw3Dconnexion_INCLUDE_DIR})
 
-    if (CISST_HAS_QT)
-      add_subdirectory (code/Qt)
-      set (saw3Dconnexion_LIBRARIES ${saw3Dconnexion_LIBRARIES} saw3DconnexionQt)
-    endif (CISST_HAS_QT)
+  if (CISST_HAS_QT)
+    add_subdirectory (code/Qt)
+    set (saw3Dconnexion_LIBRARIES ${saw3Dconnexion_LIBRARIES} saw3DconnexionQt)
+  endif (CISST_HAS_QT)
 
-    cisst_add_config_files (saw3Dconnexion)
+  cisst_add_config_files (saw3Dconnexion)
 
-    set (_CDG_FILES
-         code/mts3DconnexionConfiguration.cdg)
+  set (_CDG_FILES
+       code/mts3DconnexionConfiguration.cdg)
 
-    cisst_data_generator (saw3Dconnexion
-                          "${saw3Dconnexion_BINARY_DIR}/include"
-                          "saw3Dconnexion/"
-                          ${_CDG_FILES})
+  cisst_data_generator (saw3Dconnexion
+                        "${saw3Dconnexion_BINARY_DIR}/include"
+                        "saw3Dconnexion/"
+                        ${_CDG_FILES})
 
-    add_library (saw3Dconnexion
-                 ${saw3Dconnexion_HEADER_DIR}/saw3DconnexionExport.h
-                 ${saw3Dconnexion_HEADER_DIR}/mts3Dconnexion.h
-                 code/mts3Dconnexion.cpp
-                 ${saw3Dconnexion_CISST_DG_SRCS}
-                 ${saw3Dconnexion_CISST_DG_HDRS})
-    set_target_properties (saw3Dconnexion PROPERTIES
-                           VERSION ${saw3Dconnexion_VERSION}
-                           FOLDER "saw3Dconnexion")
-    target_link_libraries (saw3Dconnexion ${hidapi_LIBRARIES})
-    cisst_target_link_libraries (saw3Dconnexion ${REQUIRED_CISST_LIBRARIES})
+  add_library (saw3Dconnexion
+               ${saw3Dconnexion_HEADER_DIR}/saw3DconnexionExport.h
+               ${saw3Dconnexion_HEADER_DIR}/mts3Dconnexion.h
+               code/mts3Dconnexion.cpp
+               ${saw3Dconnexion_CISST_DG_SRCS}
+               ${saw3Dconnexion_CISST_DG_HDRS})
+  set_target_properties (saw3Dconnexion PROPERTIES
+                         VERSION ${saw3Dconnexion_VERSION}
+                         FOLDER "saw3Dconnexion")
+  target_link_libraries (saw3Dconnexion
+                         ${hidapi_LIBRARIES}
+                         ${cisst_LIBRARIES})
 
-    install (DIRECTORY
-             "${saw3Dconnexion_SOURCE_DIR}/include/saw3Dconnexion"
-             "${saw3Dconnexion_BINARY_DIR}/include/saw3Dconnexion"
-             DESTINATION include
-             COMPONENT saw3Dconnexion-dev)
+  install (DIRECTORY
+           "${saw3Dconnexion_SOURCE_DIR}/include/saw3Dconnexion"
+           "${saw3Dconnexion_BINARY_DIR}/include/saw3Dconnexion"
+           DESTINATION include
+           COMPONENT saw3Dconnexion-dev)
 
-    install (TARGETS saw3Dconnexion COMPONENT saw3Dconnexion
-             RUNTIME DESTINATION bin
-             LIBRARY DESTINATION lib
-             ARCHIVE DESTINATION lib)
+  install (TARGETS saw3Dconnexion COMPONENT saw3Dconnexion
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib
+           ARCHIVE DESTINATION lib)
 
-  else (hidapi_HEADER_FILE)
-    message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires hidapi/hidapi.h.  On Ubuntu install libhidapi-dev.")
-  endif (hidapi_HEADER_FILE)
-
-else (cisst_FOUND_AS_REQUIRED)
-  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires ${REQUIRED_CISST_LIBRARIES}")
-endif (cisst_FOUND_AS_REQUIRED)
+else (hidapi_HEADER_FILE)
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires hidapi/hidapi.h.  On Ubuntu install libhidapi-dev.")
+endif (hidapi_HEADER_FILE)
