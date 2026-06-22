@@ -21,7 +21,7 @@ set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstMultiTaskQt
                               cisstParameterTypes
                               cisstParameterTypesQt
-                              cisstQt)
+)
 
 find_package (cisst 1.4.0 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
@@ -50,5 +50,5 @@ if (saw3Dconnexion_FOUND AND CISST_HAS_QT)
            ARCHIVE DESTINATION lib)
 
 else (saw3Dconnexion_FOUND AND CISST_HAS_QT)
-  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires saw3Dconnexion and cisstQt")
+  message ("Information: code in ${CMAKE_CURRENT_SOURCE_DIR} will not be compiled, it requires saw3Dconnexion Qt support")
 endif (saw3Dconnexion_FOUND AND CISST_HAS_QT)
