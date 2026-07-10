@@ -47,8 +47,9 @@ saw3DconnexionQtExample \
 ```
 
 The default MTMR sample matches the older SpaceNavigator USB id
-`046d:c626`.  For newer devices using `256f:c635`, copy the sample file and
-set `vendor_id`/`product_id` to the ids reported in the startup log.
+`046d:c626`.  For other devices, such as Spaceball 5000 USB `046d:c621` or
+newer devices using `256f:c635`, copy the sample file and set
+`vendor_id`/`product_id` to the ids reported in the startup log.
 
 If the device is listed by hidapi but fails to open on Linux, check access to
 the matching `/dev/hidraw*` node.  A udev rule for development can match the
@@ -66,6 +67,9 @@ Create `/etc/udev/rules.d/99-3dconnexion.rules` with:
 ```udev
 # 3Dconnexion SpaceNavigator, older Logitech/3Dconnexion USB id
 KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c626", MODE="0666"
+
+# 3Dconnexion Spaceball 5000 USB
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c621", MODE="0666"
 
 # 3Dconnexion SpaceMouse Compact, newer 3Dconnexion USB id
 KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="256f", ATTRS{idProduct}=="c635", MODE="0666"
@@ -122,7 +126,9 @@ To drive a simulated PSM with the 3Dconnexion.  In first terminal:
     -j "$(ros2 pkg prefix three_dconnexion_config)/share/three_dconnexion_config/system-MTMR-3Dconnexion-PSM1_KIN_SIMULATED-Teleop.json"
 ```
 
-In second terminal, for visualization:
+In second terminal, for visualization:# 3Dconnexion Spaceball 5000 USB
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="046d", ATTRS{idProduct}=="c621", MODE="0666"
+
 
 ```sh
    ros2 launch dvrk_model arm.launch.py arm:=PSM1 generation:=Classic simulated:=false

@@ -23,6 +23,7 @@ else (catkin_FOUND)
   if (ament_cmake_FOUND)
     install (FILES
       saw3Dconnexion-MTMR.json
+      saw3Dconnexion-MTMR-Spaceball-5000.json
       system-MTMR-3Dconnexion-PSM1_KIN_SIMULATED-Teleop.json
       DESTINATION share/${PROJECT_NAME})
 
