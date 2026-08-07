@@ -25,6 +25,7 @@ else (catkin_FOUND)
       saw3Dconnexion-MTMR.json
       saw3Dconnexion-MTMR-Spaceball-5000.json
       system-MTMR-3Dconnexion-PSM1_KIN_SIMULATED-Teleop.json
+      system-MTMR-3Dconnexion-PSM1_from_ROS.json
       DESTINATION share/${PROJECT_NAME})
 
     ament_package ()
