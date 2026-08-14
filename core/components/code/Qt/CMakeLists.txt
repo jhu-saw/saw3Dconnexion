@@ -19,7 +19,7 @@ set (REQUIRED_CISST_LIBRARIES
      cisstParameterTypes
      cisstParameterTypesQt)
 
-find_package (cisst REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
+find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
 set (CMAKE_AUTOMOC ON)
