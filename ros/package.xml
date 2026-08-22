@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>three_dconnexion</name>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <description>The 3Dconnexion cisst/SAW ROS package</description>
   <maintainer email="anton.deguet@jhu.edu">Anton Deguet</maintainer>
   <author email="anton.deguet@jhu.edu">Anton Deguet</author>

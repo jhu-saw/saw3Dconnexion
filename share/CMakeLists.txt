@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.16)
-project (three_dconnexion_config VERSION 0.1.0)
+project (three_dconnexion_config VERSION 1.0.0)
 
 # ROS 1
 find_package (catkin QUIET)

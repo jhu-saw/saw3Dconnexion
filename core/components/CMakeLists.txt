@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (saw3Dconnexion VERSION 0.1.0)
+project (saw3Dconnexion VERSION 1.0.0)
 
 set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstVector

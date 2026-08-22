@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (saw3DconnexionExamples VERSION 0.1.0)
+project (saw3DconnexionExamples VERSION 1.0.0)
 
 set (REQUIRED_CISST_LIBRARIES cisstCommon
                               cisstCommonQt
@@ -27,7 +27,7 @@ find_package (cisst 1.5 REQUIRED COMPONENTS ${REQUIRED_CISST_LIBRARIES})
 
 cisst_set_output_path ()
 
-find_package (saw3Dconnexion 0.1.0)
+  find_package (saw3Dconnexion 1.0.0)
 
 if (saw3Dconnexion_FOUND AND CISST_HAS_QT)
 

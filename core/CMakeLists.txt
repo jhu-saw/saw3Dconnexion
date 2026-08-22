@@ -10,7 +10,7 @@
 # --- end cisst license ---
 
 cmake_minimum_required (VERSION 3.10)
-project (saw3DconnexionCore VERSION 0.1.0)
+project (saw3DconnexionCore VERSION 1.0.0)
 
 find_package (cisst 1.5 REQUIRED)
 cisst_cpack_settings (
