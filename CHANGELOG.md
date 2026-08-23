@@ -1,8 +1,8 @@
 Change log
 ==========
 
-1.0.0 (TBD)
-===========
+1.0.0 (2026-08-22)
+==================
 
 * First release of the SAW 3Dconnexion component.
 * Supports 3Dconnexion SpaceMouse and Spaceball devices through the cisst
