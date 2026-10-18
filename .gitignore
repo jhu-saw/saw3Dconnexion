@@ -1,0 +1,7 @@
+# ROS and colcon build artifacts
+build/
+install/
+log/
+
+# cisst log files
+cisstLog*.txt

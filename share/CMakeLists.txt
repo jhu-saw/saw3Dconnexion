@@ -16,6 +16,7 @@ project (three_dconnexion_config VERSION 1.0.0)
 find_package (catkin QUIET)
 if (catkin_FOUND)
   catkin_package ()
+  install (DIRECTORY dvrk_newton DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 else (catkin_FOUND)
 
   # ROS 2
@@ -26,6 +27,11 @@ else (catkin_FOUND)
       saw3Dconnexion-MTMR-Spaceball-5000.json
       system-MTMR-3Dconnexion-PSM1_KIN_SIMULATED-Teleop.json
       system-MTMR-3Dconnexion-PSM1_from_ROS.json
+      DESTINATION share/${PROJECT_NAME})
+
+    install (DIRECTORY
+      dvrk_newton
+      dvrk_pybullet
       DESTINATION share/${PROJECT_NAME})
 
     ament_package ()

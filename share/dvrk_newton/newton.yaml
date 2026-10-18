@@ -1,0 +1,16 @@
+command_queue_capacity: 32
+grasp:
+  max_grasps_per_object: 0
+  close_threshold_rad: 0.04
+  release_threshold_rad: 0.08
+  break_distance_m: 0.01
+  break_orientation_rad: 0.523599
+  contact_region_offset_m: [0.0, 0.0, -0.003]
+  contact_region_radius_m: 0.005
+device: cuda:0
+generated_root: null
+headless: false
+rigid_gap_m: 0.005
+scene: ECM_PSM1_PSM2_PSM3.yaml
+simulation_rate_hz: 120.0
+state_publish_rate_hz: 100.0

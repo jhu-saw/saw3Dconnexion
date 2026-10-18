@@ -77,6 +77,18 @@ if (saw3Dconnexion_FOUND)
       three_dconnexion
       ${ROS2_depends}
       )
+
+    install (DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}/../share/dvrk_newton
+      ${CMAKE_CURRENT_SOURCE_DIR}/../share/dvrk_pybullet
+      DESTINATION share/${PROJECT_NAME}
+      PATTERN "launch" EXCLUDE
+      PATTERN "*.launch.py" EXCLUDE
+      PATTERN "*.pyc" EXCLUDE)
+
+    install (DIRECTORY launch/
+      DESTINATION share/${PROJECT_NAME}/launch)
+
     ament_package ()
   endif ()
 
